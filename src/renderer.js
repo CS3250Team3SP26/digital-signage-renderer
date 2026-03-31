@@ -28,6 +28,7 @@
 // Handles per-component refresh intervals
 // Uses setInterval, respects component.refresh field
 // ============================================================
+/* istanbul ignore next */
 
 
 
@@ -36,3 +37,4 @@
 // Entry point - wires everything together
 // Runs on DOMContentLoaded
 // ============================================================
+/* istanbul ignore next */

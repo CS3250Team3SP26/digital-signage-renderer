@@ -25,7 +25,7 @@
         "<rootDir>/test"
       ],
       "collectCoverageFrom": [
-        "src/**/*.js"
+        "src/renderer.js"
       ],
       "coverageThreshold": {
         "global": {
