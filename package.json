@@ -1,7 +1,7 @@
 {
     "name": "digital-signage-renderer",
     "version": "0.1.0",
-    "description": "Config a digital signage for CS 3250",
+    "description": "Digital signage renderer which renders a fully customizable signage display from a single JSON config file.",
     "type": "module",
     "scripts": {
       "lint": "eslint src/ test/",
