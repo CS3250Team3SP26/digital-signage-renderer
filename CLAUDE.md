@@ -45,13 +45,14 @@ The renderer is built around a **component registry pattern** that keeps each co
 ### Four-File Structure
 
 ```
-project/
-├── index.html       # Minimal shell — zone containers only, no hardcoded content
-├── styles.css       # Zone layout (flexbox/grid) + component styling + CSS custom properties
-├── renderer.js      # All application logic (see internal sections below)
-├── config.json      # Layout, component definitions, refresh intervals, content sources
-└── test/
-    └── renderer.test.js   # Jest unit tests targeting pure functions in renderer.js
+digital-signage-renderer/
+└── src/
+    ├── index.html       # Minimal shell — zone containers only, no hardcoded content
+    ├── styles.css       # Zone layout (flexbox/grid) + component styling + CSS custom properties
+    ├── renderer.js      # All application logic (see internal sections below)
+    ├── config.json      # Layout, component definitions, refresh intervals, content sources
+    └── test/
+        └── renderer.test.js   # Jest unit tests targeting pure functions in renderer.js
 ```
 
 > `test/` and tooling config files (`package.json`, `eslint.config.js`, etc.) are support files, not part of the four-file deliverable.
