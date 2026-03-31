@@ -15,7 +15,6 @@ export default [
         ...globals.browser,        // Replaces env.browser
         ...globals.node,           // Replaces env.node
         ...globals.jest,           // Replaces env.jest
-        browser: 'readonly',       // Replaces env.webextensions
       },
     },
     rules: {
