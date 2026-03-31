@@ -1,0 +1,26 @@
+{
+  "proxy": "https://corsproxy.io/?url=",
+  "layout": {
+    "zones": ["header", "main", "sidebar", "footer"]
+  },
+  "theme": {
+    "background": "#111111",
+    "color": "#ffffff",
+    "fontFamily": "sans-serif"
+  },
+  "components": [
+    {
+      "zone": "sidebar",
+      "type": "image",
+      "src": "./assets/logo.png",
+      "alt": "Your image description here"
+    },
+    {
+      "zone": "main",
+      "type": "rss",
+      "url": "https://feeds.bbci.co.uk/news/rss.xml",
+      "maxItems": 5,
+      "refresh": 60000
+    }
+  ]
+}
