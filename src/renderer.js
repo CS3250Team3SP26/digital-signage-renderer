@@ -82,7 +82,9 @@ function validateConfig(config, validZones) {
 // Map of type -> builder function
 // Register all component types here
 // ============================================================
-
+const registry = {
+    image: buildImage  // "when you see 'image', use this function"
+};
 
 
 // ============================================================
@@ -97,6 +99,7 @@ function buildImage(component){
     img.setAttribute('alt', component.alt);
     return img;
 }
+
 
 
 
@@ -116,4 +119,4 @@ function buildImage(component){
 // ============================================================
 /* istanbul ignore next */
 
-export { loadConfig, validateConfig };
+export { loadConfig, validateConfig, buildImage, registry };
