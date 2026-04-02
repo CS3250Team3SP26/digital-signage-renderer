@@ -91,6 +91,12 @@ function validateConfig(config, validZones) {
 // Input: config object  Output: DOM element
 // These are the unit-testable surface
 // ============================================================
+function buildImage(component){
+    const img = document.createElement('img');
+    img.setAttribute('src', component.src);
+    img.setAttribute('alt', component.alt);
+    return img;
+}
 
 
 
