@@ -82,7 +82,9 @@ function validateConfig(config, validZones) {
 // Map of type -> builder function
 // Register all component types here
 // ============================================================
-
+const registry = {
+    image: buildImage  // "when you see 'image', use this function"
+};
 
 
 // ============================================================
@@ -91,6 +93,13 @@ function validateConfig(config, validZones) {
 // Input: config object  Output: DOM element
 // These are the unit-testable surface
 // ============================================================
+function buildImage(component){
+    const img = document.createElement('img');
+    img.setAttribute('src', component.src);
+    img.setAttribute('alt', component.alt);
+    return img;
+}
+
 
 
 
@@ -110,4 +119,4 @@ function validateConfig(config, validZones) {
 // ============================================================
 /* istanbul ignore next */
 
-export { loadConfig, validateConfig };
+export { loadConfig, validateConfig, buildImage, registry };
