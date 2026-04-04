@@ -136,6 +136,13 @@ function getComponent(type) {
 // Input: config object  Output: DOM element
 // These are the unit-testable surface
 // ============================================================
+function buildImage(component){
+    const img = document.createElement('img');
+    img.setAttribute('src', component.src);
+    img.setAttribute('alt', component.alt);
+    return img;
+}
+
 
 
 // ============================================================
@@ -154,4 +161,4 @@ function getComponent(type) {
 // ============================================================
 /* istanbul ignore next */
 
-export { loadConfig, validateConfig, registerComponent, getComponent };
+export { loadConfig, validateConfig, registerComponent, getComponent, buildImage };
