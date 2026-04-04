@@ -1,7 +1,7 @@
 import { jest, describe, it, expect } from '@jest/globals';
 import { getComponent, registerComponent } from '../src/renderer.js';
 
-describe(`registerComponent`, () => {
+describe(`registerComponent and getComponent`, () => {
 
     const mockBuilder = jest.fn();
 

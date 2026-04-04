@@ -90,11 +90,12 @@ const registry = new Map();
  * To add a new component type, simply call registerComponent with the type string and the builder function that creates the DOM element for that component
  */
 /* istanbul ignore next */
+// eslint-disable-next-line no-unused-vars
 function registerComponents() {
     // To register a new component add it below
     // ex. registerComponent('type', buildType)
-    registerComponent('rss', buildRss);
-    registerComponent('image', buildImage);
+    // registerComponent('rss', buildRss);
+    // registerComponent('image', buildImage);
 }
 
 /**
