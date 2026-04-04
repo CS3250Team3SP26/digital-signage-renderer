@@ -82,7 +82,52 @@ function validateConfig(config, validZones) {
 // Map of type -> builder function
 // Register all component types here
 // ============================================================
+const registry = new Map();
 
+/**
+ * Registers all component types with their corresponding builder functions
+ * This function should be called during the bootstrap phase to ensure all components are available for rendering
+ * To add a new component type, simply call registerComponent with the type string and the builder function that creates the DOM element for that component
+ */
+/* istanbul ignore next */
+function registerComponents() {
+    // To register a new component add it below
+    // ex. registerComponent('type', buildType)
+    registerComponent('rss', buildRss);
+    registerComponent('image', buildImage);
+}
+
+/**
+ * Registers a component type with its corresponding builder function
+ * @param {String} type The component type to register
+ * @param {Function} buildType The function that creates the DOM element for the component
+ * @throws {Error} If the type is not a string or the buildType is not a function
+ */
+function registerComponent(type, buildType) {
+    if (typeof type !== 'string') {
+        throw new Error(`Type must be a string`);
+    }
+    if (typeof buildType !== 'function') {
+        throw new Error(`Builder function for type ${type} is not a function`);
+    }
+    registry.set(type, buildType);
+}
+
+/**
+ * Retrieves the builder function for a given component type from the registry
+ * @param {String} type The component type to retrieve
+ * @returns {Function} The builder function for the specified component type
+ * @throws {Error} If the type is not a string or the builder function is not found
+ */
+function getComponent(type) {
+    if (typeof type !== 'string') {
+        throw new Error(`Type must be a string`);
+    }
+    if (!registry.has(type)) {
+        throw new Error(`Component of type ${type} is missing a registered builder`)
+    }
+    return registry.get(type);
+}
 
 
 // ============================================================
@@ -91,7 +136,6 @@ function validateConfig(config, validZones) {
 // Input: config object  Output: DOM element
 // These are the unit-testable surface
 // ============================================================
-
 
 
 // ============================================================
@@ -110,4 +154,4 @@ function validateConfig(config, validZones) {
 // ============================================================
 /* istanbul ignore next */
 
-export { loadConfig, validateConfig };
+export { loadConfig, validateConfig, registerComponent, getComponent };
