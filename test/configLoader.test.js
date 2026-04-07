@@ -139,7 +139,7 @@ describe('validateConfig', () => {
             },
             components: []
         }
-        expect(() => validateConfig(config, validZones)).toThrow("config.components must be a non-empty array");
+        expect(() => validateConfig(config, validZones)).toThrow("components must be a non-empty array");
     });
 
     it(`should throw when components is empty or when it is not an array`, () => {
@@ -149,7 +149,7 @@ describe('validateConfig', () => {
             },
             components: {}
         }
-        expect(() => validateConfig(config, validZones)).toThrow("config.components must be a non-empty array");
+        expect(() => validateConfig(config, validZones)).toThrow("components must be a non-empty array");
     });
 
     it(`should throw when a component is missing a type field`, () => {
