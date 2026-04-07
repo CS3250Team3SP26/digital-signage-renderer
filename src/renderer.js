@@ -90,13 +90,13 @@ function validateComponent(component, validZones) {
     const type = component.type;
     if (!type) {
         errors.push("Each component must have a type field");
-    } else if (!REQUIRED_COMPONENT_FIELDS[type]) {
-        errors.push(`Unknown component type: ${type}`);
-    } else {
-        const missingFields = REQUIRED_COMPONENT_FIELDS[type].filter(field => !component[field]); 
+    } else if (REQUIRED_COMPONENT_FIELDS[type]) {
+        const missingFields = REQUIRED_COMPONENT_FIELDS[type].filter(field => !component[field]);
         if (missingFields.length > 0) {
             errors.push(`Component of type ${type} is missing required fields: ${missingFields.join(', ')}`);
         }
+    } else {
+        errors.push(`Unknown component type: ${type}`);
     }
     if (!component.zone) {
         errors.push(`Each component must have a zone field`);
