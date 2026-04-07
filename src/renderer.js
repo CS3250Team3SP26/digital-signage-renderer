@@ -28,53 +28,82 @@ async function loadConfig() {
  * @throws {Error} If there are validation errors, with details about missing fields or invalid zones
  */
 function validateConfig(config, validZones) {
-    const requiredFields = {
-        image: ['src', 'alt'],
-        rss: ['url']
-    };
-    const errors = [];
-
-    // Validate config.layout field
-    if (!config.layout) {
-        errors.push("Missing required field: layout");
-    } else if (!Array.isArray(config.layout.zones) || config.layout.zones.length === 0) {
-        errors.push("layout.zones must be a non-empty array");
-    } else {
-        const invalidZones = config.layout.zones.filter(zone => !validZones.includes(zone));
-        if (invalidZones.length > 0) {
-            errors.push(`Invalid zones: ${invalidZones.join(', ')}`);
-        }
-    } 
-
-    // Validate config.components field
-    if (!config.components) {
-        errors.push("Missing required field: components");
-    } else if (!Array.isArray(config.components) || config.components.length === 0) {
-        errors.push("config.components must be a non-empty array");
-    } else {
-        for (const component of config.components) {
-            const type = component.type;
-            if (!type) {
-                errors.push("Each component must have a type field");
-            } else if (!requiredFields[type]) {
-                errors.push(`Unknown component type: ${type}`);
-            } else {
-                const missingFields = requiredFields[type].filter(field => !component[field]); 
-                if (missingFields.length > 0) {
-                    errors.push(`Component of type ${type} is missing required fields: ${missingFields.join(', ')}`);
-                }
-            }
-            if (!component.zone) {
-                errors.push(`Each component must have a zone field`);
-            } else if (!validZones.includes(component.zone)) {
-                errors.push(`Each component must have a valid zone: ${component.zone} is an invalid zone`);
-            }
-        }
-    }
+    const errors = [
+        ...validateLayout(config.layout, validZones),
+        ...validateComponents(config.components, validZones)
+    ];
 
     if (errors.length > 0) {
         throw new Error(errors.join("\n"));
     }
+}
+
+/**
+ * Validates the layout configuration, ensuring required fields are present and zones are valid
+ * @param {Object} layout The layout configuration object to validate
+ * @param {Array} validZones The array of valid zone identifiers
+ * @returns {Array} An array of error messages, empty if no errors are found
+ */
+function validateLayout(layout, validZones) {
+    const errors = [];
+    if (!layout) {
+        errors.push("Missing required field: layout");
+    } else if (!Array.isArray(layout.zones) || layout.zones.length === 0) {
+        errors.push("layout.zones must be a non-empty array");
+    } else {
+        const invalidZones = layout.zones.filter(zone => !validZones.includes(zone));
+        if (invalidZones.length > 0) {
+            errors.push(`Invalid zones: ${invalidZones.join(', ')}`);
+        }
+    } 
+    return errors;
+}
+
+/**
+ * Validates the components configuration, ensuring required fields are present and zones are valid
+ * @param {Array} components The array of component configuration objects to validate
+ * @param {Array} validZones The array of valid zone identifiers
+ * @returns {Array} An array of error messages, empty if no errors are found
+ */
+function validateComponents(components, validZones) {
+    const errors = [];
+    if (!components) {
+        errors.push("Missing required field: components");
+    } else if (!Array.isArray(components) || components.length === 0) {
+        errors.push("components must be a non-empty array");
+    } else {
+        for (const component of components) {
+            errors.push(...validateComponent(component, validZones));
+        }
+    }
+    return errors;
+}
+
+/**
+ * Validates a single component configuration, ensuring required fields are present and the zone is valid
+ * @param {Object} component The component configuration object to validate
+ * @param {Array} validZones The array of valid zone identifiers
+ * @returns {Array} An array of error messages, empty if no errors are found
+ */
+function validateComponent(component, validZones) {
+    const errors = [];
+    const type = component.type;
+    if (!type) {
+        errors.push("Each component must have a type field");
+    } else if (REQUIRED_COMPONENT_FIELDS[type]) {
+        const missingFields = REQUIRED_COMPONENT_FIELDS[type].filter(field => !component[field]);
+        if (missingFields.length > 0) {
+            errors.push(`Component of type ${type} is missing required fields: ${missingFields.join(', ')}`);
+        }
+    } else {
+        errors.push(`Unknown component type: ${type}`);
+    }
+    if (!component.zone) {
+        errors.push(`Each component must have a zone field`);
+    } else if (!validZones.includes(component.zone)) {
+        errors.push(`Each component must have a valid zone: ${component.zone} is an invalid zone`);
+    }
+    return errors;
 }
 
 // ============================================================
@@ -83,6 +112,11 @@ function validateConfig(config, validZones) {
 // Register all component types here
 // ============================================================
 const registry = new Map();
+
+const REQUIRED_COMPONENT_FIELDS = {
+    image: ['src', 'alt'],
+    rss: ['url']
+};
 
 /**
  * Registers all component types with their corresponding builder functions
@@ -102,14 +136,14 @@ function registerComponents() {
  * Registers a component type with its corresponding builder function
  * @param {String} type The component type to register
  * @param {Function} buildType The function that creates the DOM element for the component
- * @throws {Error} If the type is not a string or the buildType is not a function
+ * @throws {TypeError} If the type is not a string or the buildType is not a function
  */
 function registerComponent(type, buildType) {
     if (typeof type !== 'string') {
-        throw new Error(`Type must be a string`);
+        throw new TypeError(`Type must be a string`);
     }
     if (typeof buildType !== 'function') {
-        throw new Error(`Builder function for type ${type} is not a function`);
+        throw new TypeError(`Builder function for type ${type} is not a function`);
     }
     registry.set(type, buildType);
 }
@@ -118,11 +152,11 @@ function registerComponent(type, buildType) {
  * Retrieves the builder function for a given component type from the registry
  * @param {String} type The component type to retrieve
  * @returns {Function} The builder function for the specified component type
- * @throws {Error} If the type is not a string or the builder function is not found
+ * @throws {TypeError} If the type is not a string or the builder function is not found
  */
 function getComponent(type) {
     if (typeof type !== 'string') {
-        throw new Error(`Type must be a string`);
+        throw new TypeError(`Type must be a string`);
     }
     if (!registry.has(type)) {
         throw new Error(`Component of type ${type} is missing a registered builder`)
@@ -162,4 +196,4 @@ function buildImage(component){
 // ============================================================
 /* istanbul ignore next */
 
-export { loadConfig, validateConfig, registerComponent, getComponent, buildImage };
+export { loadConfig, validateConfig, validateLayout, validateComponents, validateComponent, registerComponent, getComponent, buildImage };

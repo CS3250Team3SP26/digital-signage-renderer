@@ -1,5 +1,5 @@
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { loadConfig, validateConfig } from '../src/renderer.js';
+import { loadConfig, validateConfig, validateLayout, validateComponents, validateComponent } from '../src/renderer.js';
 
 describe('loadConfig', () => {
 
@@ -64,66 +64,7 @@ describe('validateConfig', () => {
         expect(() => validateConfig(config, validZones)).not.toThrow();
     });
 
-    it(`should throw when there is no layout field`, () => {
-        const config = {
-            components: [
-                {
-                    type: "rss",
-                    zone: "header",
-                    url: "https//AFakeURL"
-                }
-            ]
-        }
-        expect(() => validateConfig(config, validZones)).toThrow("Missing required field: layout");
-    });
-
-    it(`should throw when there is no layout.zones field`, () => {
-        const config = {
-            layout: {},
-            components: [
-                {
-                    type: "rss",
-                    zone: "header",
-                    url: "https//AFakeURL"
-                }
-            ]
-        }
-        expect(() => validateConfig(config, validZones)).toThrow("layout.zones must be a non-empty array");
-    });
-
-    it(`should throw when layout.zones field is empty`, () => {
-        const config = {
-            layout: {
-                zones: []
-            },
-            components: [
-                {
-                    type: "rss",
-                    zone: "header",
-                    url: "https//AFakeURL"
-                }
-            ]
-        }
-        expect(() => validateConfig(config, validZones)).toThrow("layout.zones must be a non-empty array");
-    });
-
-    it(`should throw when zones contains an invalid zone`, () => {
-        const config = {
-            layout: {
-                zones: ["footer"]
-            },
-            components: [
-                {
-                    type: "rss",
-                    zone: "header",
-                    url: "https//AFakeURL"
-                }
-            ]
-        }
-        expect(() => validateConfig(config, validZones)).toThrow("Invalid zones: footer");
-    });
-
-    it(`should throw when there is no components field`, () => {
+    it(`should throw when thre are missing required fields`, () => {
         const config = {
             layout: {
                 zones: ["header"]
@@ -131,102 +72,81 @@ describe('validateConfig', () => {
         }
         expect(() => validateConfig(config, validZones)).toThrow("Missing required field: components");
     });
+});
 
-    it(`should throw when components is empty`, () => {
-        const config = {
-            layout: {
-                zones: ["header"]
-            },
-            components: []
-        }
-        expect(() => validateConfig(config, validZones)).toThrow("config.components must be a non-empty array");
+describe('validateLayout', () => {
+
+    const validZones = ["header"];
+
+    it('should return no errors when layout is valid', () => {
+        expect(validateLayout({ zones: ["header"] }, validZones)).toEqual([]);
     });
 
-    it(`should throw when components is empty or when it is not an array`, () => {
-        const config = {
-            layout: {
-                zones: ["header"]
-            },
-            components: {}
-        }
-        expect(() => validateConfig(config, validZones)).toThrow("config.components must be a non-empty array");
+    it('should return an error when there is no layout field', () => {
+        expect(validateLayout(undefined, validZones)).toContain("Missing required field: layout");
     });
 
-    it(`should throw when a component is missing a type field`, () => {
-        const config = {
-            layout: {
-                zones: ["header"]
-            },
-            components: [
-                {
-                    zone: "header",
-                    url: "https//AFakeURL"
-                }
-            ]
-        }
-        expect(() => validateConfig(config, validZones)).toThrow("Each component must have a type field");
+    it('should return an error when there is no layout.zones field', () => {
+        expect(validateLayout({}, validZones)).toContain("layout.zones must be a non-empty array");
     });
 
-    it(`should throw when a component has an undefined type`, () => {
-        const config = {
-            layout: {
-                zones: ["header"]
-            },
-            components: [
-                {
-                    type: "Peanuts",
-                    zone: "header",
-                    url: "https//AFakeURL"
-                }
-            ]
-        }
-        expect(() => validateConfig(config, validZones)).toThrow("Unknown component type: Peanuts");
+    it('should return an error when layout.zones field is empty', () => {
+        expect(validateLayout({ zones: [] }, validZones)).toContain("layout.zones must be a non-empty array");
     });
 
-    it(`should throw when a component is missing a required field for that type`, () => {
-        const config = {
-            layout: {
-                zones: ["header"]
-            },
-            components: [
-                {
-                    type: "rss",
-                    zone: "header",
-                }
-            ]
-        }
-        expect(() => validateConfig(config, validZones)).toThrow("Component of type rss is missing required fields: url");
+    it('should return an error when zones contains an invalid zone', () => {
+        expect(validateLayout({ zones: ["footer"] }, validZones)).toContain("Invalid zones: footer");
+    });
+});
+
+describe('validateComponents', () => {
+
+    const validZones = ["header"];
+
+    it('should return no errors when components are valid', () => {
+        const components = [{ type: "rss", zone: "header", url: "https//AFakeURL" }];
+        expect(validateComponents(components, validZones)).toEqual([]);
     });
 
-    it(`should throw when a component is missing a zone field`, () => {
-        const config = {
-            layout: {
-                zones: ["header"]
-            },
-            components: [
-                {
-                    type: "rss",
-                    url: "https//AFakeURL"
-                }
-            ]
-        }
-        expect(() => validateConfig(config, validZones)).toThrow("Each component must have a zone field");
+    it('should return an error when there is no components field', () => {
+        expect(validateComponents(undefined, validZones)).toContain("Missing required field: components");
     });
 
-    it(`should throw when a component has an invalid zone`, () => {
-        const config = {
-            layout: {
-                zones: ["header"]
-            },
-            components: [
-                {
-                    type: "rss",
-                    zone: "footer",
-                    url: "https//AFakeURL"
-                }
-            ]
-        }
-        expect(() => validateConfig(config, validZones)).toThrow("Each component must have a valid zone: footer is an invalid zone");
+    it('should return an error when components is empty', () => {
+        expect(validateComponents([], validZones)).toContain("components must be a non-empty array");
+    });
+
+    it('should return an error when components is not an array', () => {
+        expect(validateComponents({}, validZones)).toContain("components must be a non-empty array");
+    });
+});
+
+describe('validateComponent', () => {
+
+    const validZones = ["header"];
+
+    it('should return no errors when component is valid', () => {
+        expect(validateComponent({ type: "rss", zone: "header", url: "https//AFakeURL" }, validZones)).toEqual([]);
+    });
+
+    it('should return an error when a component is missing a type field', () => {
+        expect(validateComponent({ zone: "header", url: "https//AFakeURL" }, validZones)).toContain("Each component must have a type field");
+    });
+
+    it('should return an error when a component has an unknown type', () => {
+        expect(validateComponent({ type: "Peanuts", zone: "header", url: "https//AFakeURL" }, validZones)).toContain("Unknown component type: Peanuts");
+    });
+
+    it('should return an error when a component is missing a required field for that type', () => {
+        expect(validateComponent({ type: "rss", zone: "header" }, validZones)).toContain("Component of type rss is missing required fields: url");
+    });
+
+    it('should return an error when a component is missing a zone field', () => {
+        expect(validateComponent({ type: "rss", url: "https//AFakeURL" }, validZones)).toContain("Each component must have a zone field");
+    });
+
+    it('should return an error when a component has an invalid zone', () => {
+        expect(validateComponent({ type: "rss", zone: "footer", url: "https//AFakeURL" }, validZones)).toContain("Each component must have a valid zone: footer is an invalid zone");
     });
 });
         
