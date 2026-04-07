@@ -136,14 +136,14 @@ function registerComponents() {
  * Registers a component type with its corresponding builder function
  * @param {String} type The component type to register
  * @param {Function} buildType The function that creates the DOM element for the component
- * @throws {Error} If the type is not a string or the buildType is not a function
+ * @throws {TypeError} If the type is not a string or the buildType is not a function
  */
 function registerComponent(type, buildType) {
     if (typeof type !== 'string') {
-        throw new Error(`Type must be a string`);
+        throw new TypeError(`Type must be a string`);
     }
     if (typeof buildType !== 'function') {
-        throw new Error(`Builder function for type ${type} is not a function`);
+        throw new TypeError(`Builder function for type ${type} is not a function`);
     }
     registry.set(type, buildType);
 }
@@ -152,11 +152,11 @@ function registerComponent(type, buildType) {
  * Retrieves the builder function for a given component type from the registry
  * @param {String} type The component type to retrieve
  * @returns {Function} The builder function for the specified component type
- * @throws {Error} If the type is not a string or the builder function is not found
+ * @throws {TypeError} If the type is not a string or the builder function is not found
  */
 function getComponent(type) {
     if (typeof type !== 'string') {
-        throw new Error(`Type must be a string`);
+        throw new TypeError(`Type must be a string`);
     }
     if (!registry.has(type)) {
         throw new Error(`Component of type ${type} is missing a registered builder`)
