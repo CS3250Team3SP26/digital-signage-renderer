@@ -196,4 +196,4 @@ function buildImage(component){
 // ============================================================
 /* istanbul ignore next */
 
-export { loadConfig, validateConfig, registerComponent, getComponent, buildImage };
+export { loadConfig, validateConfig, validateLayout, validateComponents, validateComponent, registerComponent, getComponent, buildImage };
