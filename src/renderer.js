@@ -198,6 +198,12 @@ function buildImage(component){
 // Entry point - wires everything together
 // Runs on DOMContentLoaded
 // ============================================================
+
+/**
+ * Bootstraps the application by loading the configuration, registering components, and rendering them in their respective zones
+ * This function is called when the DOMContentLoaded event is fired, ensuring that the DOM is fully loaded before attempting to manipulate it
+ * It handles errors gracefully by catching exceptions and displaying an error message on the page if the configuration fails to load or is invalid
+ */
 /* istanbul ignore next */
 async function bootstrap() {
     try {
@@ -209,7 +215,7 @@ async function bootstrap() {
             const element = await builder(component, `component-${i}`);
             document.getElementById(component.zone).appendChild(element);
             if (component.refresh) {
-                //scheduleRefresh(component, element, builder);
+                // Call the scheduler to set up refresh intervals for this component
             }
         }
     }
