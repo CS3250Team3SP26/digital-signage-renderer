@@ -221,6 +221,9 @@ async function bootstrap() {
         document.body.appendChild(errorElement);
     }
 }
+
+document.addEventListener('DOMContentLoaded', bootstrap);
+
 export { loadConfig, 
     validateConfig, 
     validateLayout, 
