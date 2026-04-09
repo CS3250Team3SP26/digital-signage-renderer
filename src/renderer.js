@@ -4,21 +4,25 @@
 // Rejects on missing required fields
 // ============================================================
 /**
- * Loads the configuration from config.json
+ * Loads the configuration from config.json and validates it against required fields and valid zones
+ * @param {Array} ValidZones An array of valid zone identifiers to validate against
  * @returns {Promise<Object>} The loaded configuration object
  * @throws {Error} If there is an error fetching the config.json file
  * @throws {Error} If there is an error parsing the json file
  */
-async function loadConfig() {
+async function loadConfig(ValidZones) {
     const response = await fetch('./config.json');
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
     }
+    let config;
     try {
-        return await response.json();
+        config = await response.json();
     } catch {
         throw new Error("config.json contains invalid JSON - check for syntax errors");
     }
+    validateConfig(config, ValidZones);
+    return config;
 }
 
 /**
@@ -195,5 +199,35 @@ function buildImage(component){
 // Runs on DOMContentLoaded
 // ============================================================
 /* istanbul ignore next */
-
-export { loadConfig, validateConfig, validateLayout, validateComponents, validateComponent, registerComponent, getComponent, buildImage };
+async function bootstrap() {
+    try {
+        const validZones = Array.from(document.querySelectorAll('.zone')).map(el => el.id);
+        const config = await loadConfig(validZones);
+        registerComponents();
+        for (const [i, component] of config.components.entries()) {
+            const builder = getComponent(component.type);
+            const element = await builder(component, `component-${i}`);
+            document.getElementById(component.zone).appendChild(element);
+            if (component.refresh) {
+                //scheduleRefresh(component, element, builder);
+            }
+        }
+    }
+    catch (error) {
+        console.error("Error during bootstrap:", error);
+        const errorElement = document.createElement('div');
+        errorElement.style.color = 'red';
+        errorElement.textContent = `Error loading configuration: ${error.message}`;
+        document.body.appendChild(errorElement);
+    }
+}
+export { loadConfig, 
+    validateConfig, 
+    validateLayout, 
+    validateComponents, 
+    validateComponent, 
+    registerComponent, 
+    getComponent, 
+    buildImage,
+    bootstrap
+};
