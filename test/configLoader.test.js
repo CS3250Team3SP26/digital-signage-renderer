@@ -15,15 +15,18 @@ describe('loadConfig', () => {
         // Arrange
         globalThis.fetch.mockResolvedValue({
             ok: true,
-            json: jest.fn().mockResolvedValue({ layout: {}, components: [] })
+            json: jest.fn().mockResolvedValue({
+                layout: { zones: ["main"] },
+                components: [{ zone: "main", type: "image", src: "./img.png", alt: "test" }]
+            })
         })
 
         // Act - call the function
-        const config = await loadConfig();
+        const config = await loadConfig(["main"]);
         
         // Assert - check the result
-        expect(config.layout).toEqual({});
-        expect(config.components).toEqual([]);
+        expect(config.layout).toEqual({ zones: ["main"] });
+        expect(config.components).toEqual([{ zone: "main", type: "image", src: "./img.png", alt: "test" }]);
     });
 
     it('should throw when response is not ok', async () => {
@@ -31,7 +34,7 @@ describe('loadConfig', () => {
             ok: false,
             status: 404
         })
-        await expect(loadConfig()).rejects.toThrow(`HTTP error! status: 404`);
+        await expect(loadConfig(["main"])).rejects.toThrow(`HTTP error! status: 404`);
     });
 
     it('should throw when JSON is invalid', async () => {
