@@ -1,5 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
-import { buildImage } from '../src/renderer.js';
+import { buildImage, buildClock } from '../src/renderer.js';
+
 
 describe('buildImage', () => {
 
@@ -20,4 +21,31 @@ describe('buildImage', () => {
         const result = buildImage(component);
         expect(result.tagName).toBe('IMG');
     });
+});
+describe('buildClock',() =>{ 
+    it('should create a div element', () => {
+        const component = {};
+        const id = 'component-0';
+
+        const result = buildClock(component, id);
+
+        expect(result.tagName).toBe('DIV');
+    });
+    it('verify test content is present', () => {
+        const component = {};
+        const id = 'component-1';
+
+        const result = buildClock(component, id);
+
+        expect(result.textContent).toBeTruthy();
+    });
+    it('verify data-component-id is set correctly', () => {
+        const component = {};
+        const id = 'component-1';
+
+        const result = buildClock(component, id);
+
+        expect(result.getAttribute('data-component-id')).toBe(id);
+    });
+
 });
