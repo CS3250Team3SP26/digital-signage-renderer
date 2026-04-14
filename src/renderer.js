@@ -133,7 +133,7 @@ function registerComponents() {
     // To register a new component add it below
     // ex. registerComponent('type', buildType)
     // registerComponent('rss', buildRss);
-    // registerComponent('image', buildImage);
+    registerComponent('image', buildImage);
 }
 
 /**
@@ -209,6 +209,9 @@ async function bootstrap() {
     try {
         const validZones = Array.from(document.querySelectorAll('.zone')).map(el => el.id);
         const config = await loadConfig(validZones);
+        document.documentElement.style.setProperty('--color-bg', config.theme?.background ?? '#111111');
+        document.documentElement.style.setProperty('--color-text', config.theme?.color ?? '#ffffff');
+        document.documentElement.style.setProperty('--font-family', config.theme?.fontFamily ?? 'sans-serif');
         registerComponents();
         for (const [i, component] of config.components.entries()) {
             const builder = getComponent(component.type);
