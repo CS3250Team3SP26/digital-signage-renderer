@@ -202,8 +202,10 @@ Any failure blocks the merge.
 
 To add a new component type (e.g., `weather`):
 
-1. Write a builder function: `buildWeather(component, id)` →  returns a `div.component-card` with `data-component-id` set to `id`
-   - All other structure is type-specific but contain inside the component-card
+1. build[Type](component, id) → div.component-card
+  - Root is always a div with class="component-card"
+  - data-component-id is stamped on that root div
+  - All inner content elements are children of the card div
 2. Register it: add `['weather', buildWeather]` to the component registry
 3. Add a corresponding entry to `config.json` with `"type": "weather"`
 4. Write unit tests for `buildWeather` before or alongside implementation (TDD)
