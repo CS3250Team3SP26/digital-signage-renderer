@@ -175,13 +175,25 @@ function getComponent(type) {
 // Input: config object  Output: DOM element
 // These are the unit-testable surface
 // ============================================================
+/**
+ * Builds an image component element based on the provided component configuration
+ * @param {Object} component - The component configuration object containing src and alt fields
+ * @returns {HTMLElement} The constructed img element
+ */
 function buildImage(component){
     const img = document.createElement('img');
     img.setAttribute('src', component.src);
     img.setAttribute('alt', component.alt);
     return img;
 }
-
+/**
+ * Builds a clock component element based on the provided component configuration
+ * If the mode is "analog", returns a canvas element with an analog clock drawn on it.
+ * Otherwise, returns a div element displaying the current time as text.
+ * @param {Object} component - The component configuration object containing the mode field
+ * @param {string} id - The unique identifier to set as the data-component-id attribute
+ * @returns {HTMLElement} The constructed clock element, either a canvas or a div
+ */
 function buildClock(component, id) {
         if (component.mode === "analog") {
             const canvas = document.createElement('canvas') 
@@ -195,6 +207,12 @@ function buildClock(component, id) {
             return div
         }
 }
+/**
+ * Draws an analog clock on the provided canvas element,
+ * including a clock face, hour hand, and minute hand pointing to the current time
+ * @param {HTMLCanvasElement} canvas - The canvas element to draw the clock on
+ * @returns {void}
+ */
 /* istanbul ignore next */
 function drawAnalogClock(canvas) {
     const ctx = canvas.getContext("2d");
