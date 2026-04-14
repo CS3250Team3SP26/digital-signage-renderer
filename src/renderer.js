@@ -183,10 +183,51 @@ function buildImage(component){
 }
 
 function buildClock(component, id) {
-    const div = document.createElement('div');
-    div.textContent = new Date().toLocaleTimeString();
-    div.setAttribute('data-component-id',id)
-    return div;
+        if (component.mode === "analog") {
+            const canvas = document.createElement('canvas') 
+            canvas.setAttribute('data-component-id', id);
+            drawAnalogClock(canvas);
+            return canvas
+        } else {
+            const div = document.createElement('div');
+            div.textContent = new Date().toLocaleTimeString();
+            div.setAttribute('data-component-id', id);
+            return div
+        }
+}
+function drawAnalogClock(canvas) {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    let radius = canvas.height / 2;
+    ctx.translate(radius, radius);
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    const now = new Date();
+
+    const hourAngle = ((now.getHours() % 12) / 12) * 2 * Math.PI;
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(
+    Math.sin(hourAngle) * radius * 0.5,
+    -Math.cos(hourAngle) * radius * 0.5
+);
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    const minuteAngle = ((now.getMinutes() / 60)) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(
+    Math.sin(minuteAngle) * radius * 0.7,
+    -Math.cos(minuteAngle) * radius * 0.7
+);
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 4;
+    ctx.stroke();
 }
 
 

@@ -23,6 +23,7 @@ describe('buildImage', () => {
     });
 });
 describe('buildClock',() =>{ 
+    
     it('should create a div element', () => {
         const component = {};
         const id = 'component-0';
@@ -46,6 +47,14 @@ describe('buildClock',() =>{
         const result = buildClock(component, id);
 
         expect(result.getAttribute('data-component-id')).toBe(id);
+    });
+    it('test for analog clock', () => {
+        const component = {mode: "analog"};
+        const id = 'component-0';
+    
+        const result = buildClock(component, id);
+    
+        expect(result.tagName).toBe('CANVAS');
     });
 
 });
