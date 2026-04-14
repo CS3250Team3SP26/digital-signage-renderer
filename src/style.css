@@ -16,7 +16,7 @@ html, body {
   width: 100%;
   height: 100%;
   grid-template-columns: 1fr 4fr;
-  grid-template-rows: 1fr 6fr 1fr;
+  grid-template-rows: 1fr 5fr 1fr;
   grid-template-areas:
     "header  header"
     "sidebar main"
@@ -32,28 +32,35 @@ html, body {
 #footer  { grid-area: footer; }
 
 .zone {
-  background-color: color-mix(in srgb, var(--color-bg, #111111) 85%, white);
   color: var(--color-text, #ffffff);
   font-family: var(--font-family, sans-serif);
-  padding: 1em;
   overflow: hidden;
-  border-radius: 0.4em;
   display: flex;
   flex-direction: column;
   gap: 0.5em;
 }
 
 #display-root {
-  background-color: var(--color-bg, #111111);
+    background-color: var(--color-bg, #111111);
 }
 
 #header, #footer {
-  flex-direction: row;
+    flex-direction: row;
 }
 
-.zone img {
- width: 100%;
+.component-card {
+  background-color: color-mix(in srgb, var(--color-bg, #111111) 85%, white);
+  display: flex;
+  border-radius: 0.4em;
+  padding: 0.5em;
   flex: 1;
+  min-height: 0;
+}
+
+.component-card img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   min-height: 0;
+  flex: 1;
 }
