@@ -175,11 +175,24 @@ function getComponent(type) {
 // Input: config object  Output: DOM element
 // These are the unit-testable surface
 // ============================================================
-function buildImage(component){
+
+/**
+ * Builds an image component
+ * @param {Object} component 
+ * @param {String} id 
+ * @returns {HTMLElement}
+ */
+function buildImage(component, id) {
+    const card = document.createElement('div');
+    card.className = 'component-card';
+    card.dataset.componentId = id;
+
     const img = document.createElement('img');
     img.setAttribute('src', component.src);
     img.setAttribute('alt', component.alt);
-    return img;
+
+    card.appendChild(img);
+    return card;
 }
 
 
