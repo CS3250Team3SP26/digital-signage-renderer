@@ -117,8 +117,13 @@ function validateComponent(component, validZones) {
 // ============================================================
 const registry = new Map();
 
+/**
+ * Defines the required fields for each component type to ensure proper validation of the configuration
+ * When adding a new component type, add an entry here with the type as the key and an array of required field names as the value
+ */
 const REQUIRED_COMPONENT_FIELDS = {
     image: ['src', 'alt'],
+    clock: [], // no required fields for clock, mode is optional
     rss: ['url']
 };
 
@@ -128,12 +133,12 @@ const REQUIRED_COMPONENT_FIELDS = {
  * To add a new component type, simply call registerComponent with the type string and the builder function that creates the DOM element for that component
  */
 /* istanbul ignore next */
-// eslint-disable-next-line no-unused-vars
 function registerComponents() {
     // To register a new component add it below
     // ex. registerComponent('type', buildType)
     // registerComponent('rss', buildRss);
     registerComponent('image', buildImage);
+    registerComponent('clock', buildClock);
 }
 
 /**
@@ -175,14 +180,13 @@ function getComponent(type) {
 // Input: config object  Output: DOM element
 // These are the unit-testable surface
 // ============================================================
-
 /**
- * Builds an image component
- * @param {Object} component 
- * @param {String} id 
- * @returns {HTMLElement}
+ * Builds an image component element based on the provided component configuration
+ * @param {Object} component - The component configuration object containing src and alt fields
+ * @param {string} id - The unique identifier to set as the data-component-id attribute
+ * @returns {HTMLElement} The constructed img element
  */
-function buildImage(component, id) {
+function buildImage(component, id){
     const card = document.createElement('div');
     card.className = 'component-card';
     card.dataset.componentId = id;
@@ -194,7 +198,71 @@ function buildImage(component, id) {
     card.appendChild(img);
     return card;
 }
+/**
+ * Builds a clock component element based on the provided component configuration
+ * If the mode is "analog", returns a canvas element with an analog clock drawn on it.
+ * Otherwise, returns a div element displaying the current time as text.
+ * @param {Object} component - The component configuration object containing the mode field
+ * @param {string} id - The unique identifier to set as the data-component-id attribute
+ * @returns {HTMLElement} The constructed clock element, either a canvas or a div
+ */
+function buildClock(component, id) {
+    const card = document.createElement('div');
+    card.className = 'component-card';
+    card.dataset.componentId = id;
 
+    if (component.mode === "analog") {
+        const canvas = document.createElement('canvas') 
+        drawAnalogClock(canvas);
+        card.appendChild(canvas);
+    } else {
+        const div = document.createElement('div');
+        div.textContent = new Date().toLocaleTimeString();
+        card.appendChild(div);
+    }
+    return card;
+}
+/**
+ * Draws an analog clock on the provided canvas element,
+ * including a clock face, hour hand, and minute hand pointing to the current time
+ * @param {HTMLCanvasElement} canvas - The canvas element to draw the clock on
+ * @returns {void}
+ */
+/* istanbul ignore next */
+function drawAnalogClock(canvas) {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    let radius = canvas.height / 2;
+    ctx.translate(radius, radius);
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    const now = new Date();
+
+    const hourAngle = ((now.getHours() % 12) / 12) * 2 * Math.PI;
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(
+    Math.sin(hourAngle) * radius * 0.5,
+    -Math.cos(hourAngle) * radius * 0.5
+);
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    const minuteAngle = ((now.getMinutes() / 60)) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(
+    Math.sin(minuteAngle) * radius * 0.7,
+    -Math.cos(minuteAngle) * radius * 0.7
+);
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+}
 
 
 // ============================================================
@@ -254,5 +322,6 @@ export { loadConfig,
     registerComponent, 
     getComponent, 
     buildImage,
-    bootstrap
+    bootstrap,
+    buildClock,
 };
