@@ -117,8 +117,13 @@ function validateComponent(component, validZones) {
 // ============================================================
 const registry = new Map();
 
+/**
+ * Defines the required fields for each component type to ensure proper validation of the configuration
+ * When adding a new component type, add an entry here with the type as the key and an array of required field names as the value
+ */
 const REQUIRED_COMPONENT_FIELDS = {
     image: ['src', 'alt'],
+    clock: [], // no required fields for clock, mode is optional
     rss: ['url']
 };
 
@@ -128,12 +133,12 @@ const REQUIRED_COMPONENT_FIELDS = {
  * To add a new component type, simply call registerComponent with the type string and the builder function that creates the DOM element for that component
  */
 /* istanbul ignore next */
-
 function registerComponents() {
     // To register a new component add it below
     // ex. registerComponent('type', buildType)
     // registerComponent('rss', buildRss);
-    // registerComponent('image', buildImage);
+    registerComponent('image', buildImage);
+    registerComponent('clock', buildClock);
 }
 
 /**
