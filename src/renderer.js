@@ -195,17 +195,22 @@ function buildImage(component){
  * @returns {HTMLElement} The constructed clock element, either a canvas or a div
  */
 function buildClock(component, id) {
-        if (component.mode === "analog") {
-            const canvas = document.createElement('canvas') 
-            canvas.setAttribute('data-component-id', id);
-            drawAnalogClock(canvas);
-            return canvas
-        } else {
-            const div = document.createElement('div');
-            div.textContent = new Date().toLocaleTimeString();
-            div.setAttribute('data-component-id', id);
-            return div
-        }
+    const card = document.createElement('div');
+    card.className = 'component-card';
+    card.dataset.componentId = id;
+
+    if (component.mode === "analog") {
+        const canvas = document.createElement('canvas') 
+        canvas.setAttribute('data-component-id', id);
+        drawAnalogClock(canvas);
+        card.appendChild(canvas);
+    } else {
+        const div = document.createElement('div');
+        div.textContent = new Date().toLocaleTimeString();
+        div.setAttribute('data-component-id', id);
+        card.appendChild(div);
+    }
+    return card;
 }
 /**
  * Draws an analog clock on the provided canvas element,
