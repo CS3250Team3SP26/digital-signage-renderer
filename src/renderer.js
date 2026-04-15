@@ -183,10 +183,15 @@ function buildImage(component){
 }
 
 function buildClock(component, id) {
-    const div = document.createElement('div');
-    div.textContent = new Date().toLocaleTimeString();
-    div.setAttribute('data-component-id',id)
-    return div;
+    const card = document.createElement('div');
+    card.className = 'component-card';
+    card.dataset.componentId = id;
+
+    const clock = document.createElement('div');
+    clock.textContent = new Date().toLocaleTimeString();
+
+    card.appendChild(clock);
+    return card;
 }
 
 
