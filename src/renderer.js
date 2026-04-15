@@ -178,13 +178,20 @@ function getComponent(type) {
 /**
  * Builds an image component element based on the provided component configuration
  * @param {Object} component - The component configuration object containing src and alt fields
+ * @param {string} id - The unique identifier to set as the data-component-id attribute
  * @returns {HTMLElement} The constructed img element
  */
-function buildImage(component){
+function buildImage(component, id){
+    const card = document.createElement('div');
+    card.className = 'component-card';
+    card.dataset.componentId = id;
+
     const img = document.createElement('img');
     img.setAttribute('src', component.src);
     img.setAttribute('alt', component.alt);
-    return img;
+
+    card.appendChild(img);
+    return card;
 }
 /**
  * Builds a clock component element based on the provided component configuration
@@ -201,13 +208,11 @@ function buildClock(component, id) {
 
     if (component.mode === "analog") {
         const canvas = document.createElement('canvas') 
-        canvas.setAttribute('data-component-id', id);
         drawAnalogClock(canvas);
         card.appendChild(canvas);
     } else {
         const div = document.createElement('div');
         div.textContent = new Date().toLocaleTimeString();
-        div.setAttribute('data-component-id', id);
         card.appendChild(div);
     }
     return card;
