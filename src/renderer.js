@@ -128,7 +128,7 @@ const REQUIRED_COMPONENT_FIELDS = {
  * To add a new component type, simply call registerComponent with the type string and the builder function that creates the DOM element for that component
  */
 /* istanbul ignore next */
-// eslint-disable-next-line no-unused-vars
+
 function registerComponents() {
     // To register a new component add it below
     // ex. registerComponent('type', buildType)
@@ -182,6 +182,24 @@ function buildImage(component){
     return img;
 }
 
+/**
+ * Builds a clock component
+ * This function creates a DOM element representing a clock component, which displays the current time
+ * @param {Object} component 
+ * @param {String} id 
+ * @returns {HTMLElement} The DOM element representing the clock component
+ */
+function buildClock(component, id) {
+    const card = document.createElement('div');
+    card.className = 'component-card';
+    card.dataset.componentId = id;
+
+    const clock = document.createElement('div');
+    clock.textContent = new Date().toLocaleTimeString();
+
+    card.appendChild(clock);
+    return card;
+}
 
 
 // ============================================================
@@ -238,5 +256,6 @@ export { loadConfig,
     registerComponent, 
     getComponent, 
     buildImage,
-    bootstrap
+    bootstrap,
+    buildClock,
 };
