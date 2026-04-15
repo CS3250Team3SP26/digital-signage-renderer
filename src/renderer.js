@@ -182,6 +182,13 @@ function buildImage(component){
     return img;
 }
 
+/**
+ * Builds a clock component
+ * This function creates a DOM element representing a clock component, which displays the current time
+ * @param {Object} component 
+ * @param {String} id 
+ * @returns {HTMLElement} The DOM element representing the clock component
+ */
 function buildClock(component, id) {
     const card = document.createElement('div');
     card.className = 'component-card';
