@@ -26,6 +26,8 @@ The human developers on this team are taking the lead on writing code and tests.
 
 **Provide code snippets when appropriate.** Short examples that illustrate a concept or pattern are helpful. The distinction is between "here's how fetch works" (educational) versus "here's your entire function" (doing the work for them).
 
+**"Write documentation."** — Create comprehensive documentation to reflect design decisions
+
 ---
 
 ## What Claude Should Avoid
@@ -65,7 +67,7 @@ digital-signage-renderer/
 |---|---|
 | **Config Loader** | `fetch`es and validates `config.json`; rejects on missing required fields |
 | **Component Registry** | A `Map` of `type → builderFunction`; adding a new component = registering one function |
-| **Component Builders** | One pure function per type (`buildClock`, `buildRSS`, `buildImage`, `buildText`, `buildWeather`). Takes a config object, returns a DOM element. **These are the unit-testable surface.** |
+| **Component Builders** | One pure function per type (buildClock, buildRSS, buildImage, buildText, buildWeather). Signature: build[Type](component, id) — takes the component config object and a unique string ID. Returns a div.component-card with data-component-id set to id as the root element. The card div wraps all inner content elements and is responsible for card styling. This consistent root structure allows the Scheduler to locate and replace any component type via [data-component-id] without knowing the component's internal structure. These are the unit-testable surface. |
 | **Scheduler** | Handles per-component refresh intervals using `setInterval`; respects the `refresh` field in config |
 | **Bootstrap** | Entry point — wires everything together on `DOMContentLoaded`. Iterates config components, calls registry, injects into zones, starts scheduler. |
 
@@ -120,9 +122,10 @@ digital-signage-renderer/
 ```
 DOMContentLoaded
   └── Config Loader (fetch + validate config.json)
-        └── for each component in config.components:
+        └── for each component in config.components (with index i):
+              ├── Generate ID: `component-${i}`
               ├── Registry lookup (type → builder)
-              ├── Builder (config object → DOM element)
+              ├── Builder (component, id → DOM element with data-component-id stamped)
               ├── Inject into zone (document.getElementById(component.zone))
               └── Scheduler (if component.refresh → setInterval)
 ```
@@ -199,12 +202,17 @@ Any failure blocks the merge.
 
 To add a new component type (e.g., `weather`):
 
-1. Write a builder function: `buildWeather(config)` → returns a DOM element
+1. build[Type](component, id) → div.component-card
+  - Root is always a div with class="component-card"
+  - data-component-id is stamped on that root div
+  - All inner content elements are children of the card div
 2. Register it: add `['weather', buildWeather]` to the component registry
 3. Add a corresponding entry to `config.json` with `"type": "weather"`
 4. Write unit tests for `buildWeather` before or alongside implementation (TDD)
 5. JSDoc the function
 
+The `id` parameter exists so the Scheduler can locate and replace the element
+on refresh without touching neighboring components in the same zone.
 No other existing code needs to change. That's the point of the registry pattern.
 
 ---

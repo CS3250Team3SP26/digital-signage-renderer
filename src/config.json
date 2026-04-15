@@ -1,0 +1,12 @@
+{
+    "layout": {
+      "zones": ["header"]
+      
+    },
+    "components":[
+        {
+        "zone": "header", "type": "clock", "refresh": 1000, "mode": "digital"
+        }
+    ]
+}
+  
