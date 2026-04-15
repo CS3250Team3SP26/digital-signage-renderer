@@ -124,22 +124,17 @@ const registry = new Map();
 const REQUIRED_COMPONENT_FIELDS = {
     image: ['src', 'alt'],
     clock: [], // no required fields for clock, mode is optional
-    rss: ['url']
+    rss: ['url'],
+    weather: ['url'],
 };
+
 
 /**
  * Registers all component types with their corresponding builder functions
  * This function should be called during the bootstrap phase to ensure all components are available for rendering
  * To add a new component type, simply call registerComponent with the type string and the builder function that creates the DOM element for that component
  */
-/* istanbul ignore next */
-function registerComponents() {
-    // To register a new component add it below
-    // ex. registerComponent('type', buildType)
-    // registerComponent('rss', buildRss);
-    registerComponent('image', buildImage);
-    registerComponent('clock', buildClock);
-}
+
 
 /**
  * Registers a component type with its corresponding builder function
@@ -155,6 +150,15 @@ function registerComponent(type, buildType) {
         throw new TypeError(`Builder function for type ${type} is not a function`);
     }
     registry.set(type, buildType);
+}
+/* istanbul ignore next */
+function registerComponents() {
+    registerComponent('image', buildImage);
+    registerComponent('clock', buildClock);
+    registerComponent('weather', async (component, id) => { 
+        const data = await fetchWeatherData(component.url);
+        return buildWeather(data, id);
+    });
 }
 
 /**
@@ -196,6 +200,46 @@ function buildImage(component, id){
     img.setAttribute('alt', component.alt);
 
     card.appendChild(img);
+    return card;
+}
+/**
+ * Fetches weather data from the provided URL
+ * @param {string} url - The URL to fetch weather data from
+ * @returns {Promise<Object>} The weather data object
+ */
+async function fetchWeatherData(url) {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Weather fetch failed: ${response.status}`);
+    }
+    return response.json();
+}
+/**
+ * Builds a weather component element from weather data
+ * @param {Object} data - The weather data object (e.g. from an API response)
+ * @param {string} id - The unique identifier to set as data-component-id
+ * @returns {HTMLElement} The constructed weather card element
+ */
+function buildWeather(data, id) {
+    const card = document.createElement('div');
+    card.className = 'component-card';
+    card.dataset.componentId = id;
+
+    const city = document.createElement('div');
+    city.className = 'weather-city';
+    city.textContent = data.city;
+
+    const temp = document.createElement('div');
+    temp.className = 'weather-temp';
+    temp.textContent = `${data.temperature}°`;
+
+    const condition = document.createElement('div');
+    condition.className = 'weather-condition';
+    condition.textContent = data.condition;
+
+    card.appendChild(city);
+    card.appendChild(temp);
+    card.appendChild(condition);
     return card;
 }
 /**
@@ -324,4 +368,6 @@ export { loadConfig,
     buildImage,
     bootstrap,
     buildClock,
+    buildWeather,
+    fetchWeatherData,
 };
