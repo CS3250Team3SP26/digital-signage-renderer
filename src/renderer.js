@@ -249,9 +249,26 @@ function buildWeather(data, id) {
     condition.className = 'weather-condition';
     condition.textContent = weatherDescriptions[data.current.weathercode];
 
+    const humidity = document.createElement('div');
+    humidity.className = 'weather-humidity';
+    humidity.textContent = `Humidity: ${ data.current.relative_humidity_2m}%`;
+
+    const wind = document.createElement('div');
+    wind.className = 'weather-wind';
+    wind.textContent = `Wind: ${data.current.wind_speed_10m} mph`;
+
+    const feelsLike = document.createElement('div');
+    feelsLike.className = 'weather-feels-like';
+    feelsLike.textContent = `Feels like: ${ data.current.apparent_temperature}°`;
+
     card.appendChild(city);
     card.appendChild(temp);
     card.appendChild(condition);
+    card.appendChild(humidity);
+    card.appendChild(wind);
+    card.appendChild(feelsLike);
+
+
     return card;
 }
 /**
