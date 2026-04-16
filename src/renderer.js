@@ -225,17 +225,29 @@ function buildWeather(data, id) {
     card.className = 'component-card';
     card.dataset.componentId = id;
 
+    const weatherDescriptions = {
+        0: "Clear sky",
+        1: "Mainly clear",
+        2: "Partly cloudy",
+        3: "Overcast",
+        45: "Foggy",
+        61: "Light rain",
+        63: "Moderate rain",
+        80: "Rain showers",
+        95: "Thunderstorm"
+    };
+
     const city = document.createElement('div');
     city.className = 'weather-city';
-    city.textContent = data.city;
+    city.textContent = "Denver";
 
     const temp = document.createElement('div');
     temp.className = 'weather-temp';
-    temp.textContent = `${data.temperature}°`;
+    temp.textContent = `${data.current.temperature_2m}°`;
 
     const condition = document.createElement('div');
     condition.className = 'weather-condition';
-    condition.textContent = data.condition;
+    condition.textContent = weatherDescriptions[data.current.weathercode];
 
     card.appendChild(city);
     card.appendChild(temp);

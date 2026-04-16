@@ -68,7 +68,7 @@ describe('buildClock', () => {
 
 });
 describe('buildWeather', () => {
-    const fakeData = { city: 'Denver', temperature: 72, condition: 'Sunny' };
+    const fakeData = { current: { temperature_2m: 72, weathercode: 0 } };
 
     it('should return a component-card wrapper div', () => {
         const result = buildWeather(fakeData, 'component-5');
@@ -93,7 +93,7 @@ describe('buildWeather', () => {
 
     it('should display the condition', () => {
         const result = buildWeather(fakeData, 'component-5');
-        expect(result.querySelector('.weather-condition').textContent).toBe('Sunny');
+        expect(result.querySelector('.weather-condition').textContent).toBe('Clear sky');
     });
 });
 

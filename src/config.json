@@ -1,17 +1,9 @@
 {
-    "layout": {
-      "zones": ["header"]
-      
-    },
-    "components":[
-        {
-        "zone": "header", "type": "clock", "refresh": 1000, "mode": "digital"
-        },
-        {
-          "zone": "header",
-          "type": "weather",
-          "url": "https://openweathermap.org/api"
-      }
-    ]
+  "layout": {
+    "zones": ["header", "main"]
+  },
+  "components": [
+    { "zone": "header", "type": "clock", "refresh": 1000, "mode": "digital" },
+    { "zone": "main", "type": "weather", "url": "https://api.open-meteo.com/v1/forecast?latitude=39.74&longitude=-104.99&current=temperature_2m,weathercode&temperature_unit=fahrenheit" }
+  ]
 }
-  
