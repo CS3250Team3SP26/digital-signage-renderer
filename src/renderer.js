@@ -272,6 +272,90 @@ function drawAnalogClock(canvas) {
 // ============================================================
 /* istanbul ignore next */
 
+/**
+ * Rendes a single component into the target zone
+ * Clears the zones exsisting content and bulds the DOm elemetn and appends it
+ * @param {Object} component The component configuration object to render
+ * @param {HTMLElement} zoneElem the targetzone DOM element
+ */
+function renderComponent(component, zoneElem) {
+    const builder = getComponent(component.type);
+    const element = builder(component);
+    zoneElem.innerHTML = '';
+    zoneElem.appendChild(element);
+}
+
+/**
+ * Schedules a component to be redered and an optional preiodic refresh
+ * 
+ * - Renders the component immediately on call
+ * - If the 'component.refresh' is a positive number, it sets up a repeating invterval that re-renders the compnent at that candence
+ * - Returns a cleanup handle to the callers can cancel the interval later 
+ * 
+ * @param {Object} component The component config object
+ * @param {HTMLElement} zoneElem the targetzone DOM element
+ * @returns { intervalId: Number | null, cancel: Function } 
+ *  'intervalId' is the value returned by serInterval
+ *  'cancel is a ERo-argument function thta stops the interval
+ */
+function scheduleComponent(component, zoneElem){
+    //initial render
+    renderComponent(component, zoneElem);
+
+    let intervalId = null;
+
+    if (typeof component.refresh === 'number' && component.refresh > 0) {
+        intervalId = setInterval(() => {
+            renderComponent(component, zoneElem);
+        }, component.refresh);
+
+    }
+
+    return {
+        intervalId,
+        cancel() {
+            if (intervalId !== null) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+        }
+    };
+}
+
+/**
+ * Schedules all. components in the config returning an array of handles
+ * that can each be canceled independently or all at once
+ * 
+ * Components whose target elements do not exist in the DOM are skipped with 
+ * a console warning rather than throwinf so that one bad zone doesn;t stop the rest
+ * 
+ * @param {Object[]} components - Array of component config objects 
+ * @returns {Array<{ intervalId: number | null, cancel: Function }>} Scheduler handles }}
+ */
+function scheduleAll(components) {
+    const handles = [];
+
+    for (const component of components) {
+        const zoneElem = document.getElementById(component.zone);
+        if (!zoneElem) {
+            console.warn('Zone element with id ' + component.zone + ' not found for component of type ' + component.type);
+            continue;
+        }
+        handles.push(scheduleComponent(component, zoneElem));
+    }
+    return handles;
+}
+
+/**
+ * Cancels all active scheduler handles rerturned by scheduleAll
+ * Safe to call multiople rimes, already cancelled handles are no ops
+ * @param {Array<{ cancel: Function }>} handles
+ */
+function cancelAll(handles) {
+    for (const handle of handles) {
+        handle.cancel();
+    }
+}
 
 
 // ============================================================
@@ -324,4 +408,8 @@ export { loadConfig,
     buildImage,
     bootstrap,
     buildClock,
+    scheduleComponent,
+    scheduleAll,
+    cancelAll,
+    renderComponent,
 };
