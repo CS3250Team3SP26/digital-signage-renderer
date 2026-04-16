@@ -286,31 +286,31 @@ function renderComponent(component, zoneElem) {
 }
 
 /**
- * Schedules a component to be redered and an optional preiodic refresh
+ * Schedules a component to be rendered and an optional periodic refresh
  * 
  * - Renders the component immediately on call
- * - If the 'component.refresh' is a positive number, it sets up a repeating invterval that re-renders the compnent at that candence
- * - Returns a cleanup handle to the callers can cancel the interval later 
+ * - If the 'component.refresh' is a positive number, it sets up a repeating interval that re-renders the component at that cadence
+ * - Returns a cleanup handle so callers can cancel the interval later 
  * 
  * @param {Object} component The component config object
- * @param {HTMLElement} zoneElem the targetzone DOM element
- * @returns { intervalId: Number | null, cancel: Function } 
- *  'intervalId' is the value returned by serInterval
- *  'cancel is a ERo-argument function thta stops the interval
+ * @param {HTMLElement} zoneElem the target zone DOM element
+ * @returns {Object} An object with intervalId and cancel properties
+ * @returns {(number|null)} intervalId - The value returned by setInterval, or null if no interval was created
+ * @returns {Function} cancel - A zero-argument function that stops the interval
  */
 function scheduleComponent(component, zoneElem){
     //initial render
     renderComponent(component, zoneElem);
-
+ 
     let intervalId = null;
-
+ 
     if (typeof component.refresh === 'number' && component.refresh > 0) {
         intervalId = setInterval(() => {
             renderComponent(component, zoneElem);
         }, component.refresh);
-
+ 
     }
-
+ 
     return {
         intervalId,
         cancel() {
@@ -323,18 +323,18 @@ function scheduleComponent(component, zoneElem){
 }
 
 /**
- * Schedules all. components in the config returning an array of handles
+ * Schedules all components in the config returning an array of handles
  * that can each be canceled independently or all at once
  * 
  * Components whose target elements do not exist in the DOM are skipped with 
- * a console warning rather than throwinf so that one bad zone doesn;t stop the rest
+ * a console warning rather than throwing so that one bad zone doesn't stop the rest
  * 
  * @param {Object[]} components - Array of component config objects 
- * @returns {Array<{ intervalId: number | null, cancel: Function }>} Scheduler handles }}
+ * @returns {Array<Object>} Scheduler handles with intervalId and cancel properties
  */
 function scheduleAll(components) {
     const handles = [];
-
+ 
     for (const component of components) {
         const zoneElem = document.getElementById(component.zone);
         if (!zoneElem) {

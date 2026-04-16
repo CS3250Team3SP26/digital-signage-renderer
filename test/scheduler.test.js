@@ -12,7 +12,7 @@ import {
 } from '../src/renderer.js';
 
 // ==================================================================================
-//                                  HELPERS
+//                                   HELPERS
 // ==================================================================================
 
 /** Creates a detached div and adds it to the document with a given id. */
