@@ -4,21 +4,25 @@
 // Rejects on missing required fields
 // ============================================================
 /**
- * Loads the configuration from config.json
+ * Loads the configuration from config.json and validates it against required fields and valid zones
+ * @param {Array} ValidZones An array of valid zone identifiers to validate against
  * @returns {Promise<Object>} The loaded configuration object
  * @throws {Error} If there is an error fetching the config.json file
  * @throws {Error} If there is an error parsing the json file
  */
-async function loadConfig() {
+async function loadConfig(ValidZones) {
     const response = await fetch('./config.json');
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
     }
+    let config;
     try {
-        return await response.json();
+        config = await response.json();
     } catch {
         throw new Error("config.json contains invalid JSON - check for syntax errors");
     }
+    validateConfig(config, ValidZones);
+    return config;
 }
 
 /**
@@ -28,53 +32,82 @@ async function loadConfig() {
  * @throws {Error} If there are validation errors, with details about missing fields or invalid zones
  */
 function validateConfig(config, validZones) {
-    const requiredFields = {
-        image: ['src', 'alt'],
-        rss: ['url']
-    };
-    const errors = [];
-
-    // Validate config.layout field
-    if (!config.layout) {
-        errors.push("Missing required field: layout");
-    } else if (!Array.isArray(config.layout.zones) || config.layout.zones.length === 0) {
-        errors.push("layout.zones must be a non-empty array");
-    } else {
-        const invalidZones = config.layout.zones.filter(zone => !validZones.includes(zone));
-        if (invalidZones.length > 0) {
-            errors.push(`Invalid zones: ${invalidZones.join(', ')}`);
-        }
-    } 
-
-    // Validate config.components field
-    if (!config.components) {
-        errors.push("Missing required field: components");
-    } else if (!Array.isArray(config.components) || config.components.length === 0) {
-        errors.push("config.components must be a non-empty array");
-    } else {
-        for (const component of config.components) {
-            const type = component.type;
-            if (!type) {
-                errors.push("Each component must have a type field");
-            } else if (!requiredFields[type]) {
-                errors.push(`Unknown component type: ${type}`);
-            } else {
-                const missingFields = requiredFields[type].filter(field => !component[field]); 
-                if (missingFields.length > 0) {
-                    errors.push(`Component of type ${type} is missing required fields: ${missingFields.join(', ')}`);
-                }
-            }
-            if (!component.zone) {
-                errors.push(`Each component must have a zone field`);
-            } else if (!validZones.includes(component.zone)) {
-                errors.push(`Each component must have a valid zone: ${component.zone} is an invalid zone`);
-            }
-        }
-    }
+    const errors = [
+        ...validateLayout(config.layout, validZones),
+        ...validateComponents(config.components, validZones)
+    ];
 
     if (errors.length > 0) {
         throw new Error(errors.join("\n"));
     }
+}
+
+/**
+ * Validates the layout configuration, ensuring required fields are present and zones are valid
+ * @param {Object} layout The layout configuration object to validate
+ * @param {Array} validZones The array of valid zone identifiers
+ * @returns {Array} An array of error messages, empty if no errors are found
+ */
+function validateLayout(layout, validZones) {
+    const errors = [];
+    if (!layout) {
+        errors.push("Missing required field: layout");
+    } else if (!Array.isArray(layout.zones) || layout.zones.length === 0) {
+        errors.push("layout.zones must be a non-empty array");
+    } else {
+        const invalidZones = layout.zones.filter(zone => !validZones.includes(zone));
+        if (invalidZones.length > 0) {
+            errors.push(`Invalid zones: ${invalidZones.join(', ')}`);
+        }
+    }
+    return errors;
+}
+
+/**
+ * Validates the components configuration, ensuring required fields are present and zones are valid
+ * @param {Array} components The array of component configuration objects to validate
+ * @param {Array} validZones The array of valid zone identifiers
+ * @returns {Array} An array of error messages, empty if no errors are found
+ */
+function validateComponents(components, validZones) {
+    const errors = [];
+    if (!components) {
+        errors.push("Missing required field: components");
+    } else if (!Array.isArray(components) || components.length === 0) {
+        errors.push("components must be a non-empty array");
+    } else {
+        for (const component of components) {
+            errors.push(...validateComponent(component, validZones));
+        }
+    }
+    return errors;
+}
+
+/**
+ * Validates a single component configuration, ensuring required fields are present and the zone is valid
+ * @param {Object} component The component configuration object to validate
+ * @param {Array} validZones The array of valid zone identifiers
+ * @returns {Array} An array of error messages, empty if no errors are found
+ */
+function validateComponent(component, validZones) {
+    const errors = [];
+    const type = component.type;
+    if (!type) {
+        errors.push("Each component must have a type field");
+    } else if (REQUIRED_COMPONENT_FIELDS[type]) {
+        const missingFields = REQUIRED_COMPONENT_FIELDS[type].filter(field => !component[field]);
+        if (missingFields.length > 0) {
+            errors.push(`Component of type ${type} is missing required fields: ${missingFields.join(', ')}`);
+        }
+    } else {
+        errors.push(`Unknown component type: ${type}`);
+    }
+    if (!component.zone) {
+        errors.push(`Each component must have a zone field`);
+    } else if (!validZones.includes(component.zone)) {
+        errors.push(`Each component must have a valid zone: ${component.zone} is an invalid zone`);
+    }
+    return errors;
 }
 
 // ============================================================
@@ -85,31 +118,41 @@ function validateConfig(config, validZones) {
 const registry = new Map();
 
 /**
+ * Defines the required fields for each component type to ensure proper validation of the configuration
+ * When adding a new component type, add an entry here with the type as the key and an array of required field names as the value
+ */
+const REQUIRED_COMPONENT_FIELDS = {
+    image: ['src', 'alt'],
+    clock: [], // no required fields for clock, mode is optional
+    rss: ['url']
+};
+
+/**
  * Registers all component types with their corresponding builder functions
  * This function should be called during the bootstrap phase to ensure all components are available for rendering
  * To add a new component type, simply call registerComponent with the type string and the builder function that creates the DOM element for that component
  */
 /* istanbul ignore next */
-// eslint-disable-next-line no-unused-vars
 function registerComponents() {
     // To register a new component add it below
     // ex. registerComponent('type', buildType)
-    // registerComponent('rss', buildRss);
-    // registerComponent('image', buildImage);
+    registerComponent('rss', buildRss);
+    registerComponent('image', buildImage);
+    registerComponent('clock', buildClock);
 }
 
 /**
  * Registers a component type with its corresponding builder function
  * @param {String} type The component type to register
  * @param {Function} buildType The function that creates the DOM element for the component
- * @throws {Error} If the type is not a string or the buildType is not a function
+ * @throws {TypeError} If the type is not a string or the buildType is not a function
  */
 function registerComponent(type, buildType) {
     if (typeof type !== 'string') {
-        throw new Error(`Type must be a string`);
+        throw new TypeError(`Type must be a string`);
     }
     if (typeof buildType !== 'function') {
-        throw new Error(`Builder function for type ${type} is not a function`);
+        throw new TypeError(`Builder function for type ${type} is not a function`);
     }
     registry.set(type, buildType);
 }
@@ -118,11 +161,11 @@ function registerComponent(type, buildType) {
  * Retrieves the builder function for a given component type from the registry
  * @param {String} type The component type to retrieve
  * @returns {Function} The builder function for the specified component type
- * @throws {Error} If the type is not a string or the builder function is not found
+ * @throws {TypeError} If the type is not a string or the builder function is not found
  */
 function getComponent(type) {
     if (typeof type !== 'string') {
-        throw new Error(`Type must be a string`);
+        throw new TypeError(`Type must be a string`);
     }
     if (!registry.has(type)) {
         throw new Error(`Component of type ${type} is missing a registered builder`)
@@ -137,13 +180,30 @@ function getComponent(type) {
 // Input: config object  Output: DOM element
 // These are the unit-testable surface
 // ============================================================
-function buildImage(component){
+/**
+ * Builds an image component element based on the provided component configuration
+ * @param {Object} component - The component configuration object containing src and alt fields
+ * @param {string} id - The unique identifier to set as the data-component-id attribute
+ * @returns {HTMLElement} The constructed img element
+ */
+function buildImage(component, id){
+    const card = document.createElement('div');
+    card.className = 'component-card';
+    card.dataset.componentId = id;
+
     const img = document.createElement('img');
     img.setAttribute('src', component.src);
     img.setAttribute('alt', component.alt);
-    return img;
+
+    card.appendChild(img);
+    return card;
 }
 
+/**
+ * Parses an RSS XML string and returns an array of item titles
+ * @param {string} xmlString - The raw XML string from an RSS feed
+ * @returns {string[]} An array of title strings extracted from each <item> element
+ */
 function parseRssFeed(xmlString) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlString, 'text/xml');
@@ -152,6 +212,98 @@ function parseRssFeed(xmlString) {
     return titles;
 }
 
+/**
+ * Builds an RSS component element that fetches and displays feed item titles
+ * @param {Object} component - The component configuration object containing a url field
+ * @param {string} id - The unique identifier to set as the data-component-id attribute
+ * @returns {HTMLElement} The constructed card div (fetch populates it asynchronously)
+ */
+/* istanbul ignore next */
+function buildRss(component, id) {
+    const card = document.createElement('div');
+    card.className = 'component-card';
+    card.dataset.componentId = id;
+
+    fetch(component.url)
+        .then(response => response.text())
+        .then(text => {
+            const titles = parseRssFeed(text);
+            titles.forEach(title => {
+                const p = document.createElement('p');
+                p.textContent = title;
+                card.appendChild(p);
+            });
+        });
+
+    return card;
+}
+
+/**
+ * Builds a clock component element based on the provided component configuration
+ * If the mode is "analog", returns a canvas element with an analog clock drawn on it.
+ * Otherwise, returns a div element displaying the current time as text.
+ * @param {Object} component - The component configuration object containing the mode field
+ * @param {string} id - The unique identifier to set as the data-component-id attribute
+ * @returns {HTMLElement} The constructed clock element, either a canvas or a div
+ */
+function buildClock(component, id) {
+    const card = document.createElement('div');
+    card.className = 'component-card';
+    card.dataset.componentId = id;
+
+    if (component.mode === "analog") {
+        const canvas = document.createElement('canvas')
+        drawAnalogClock(canvas);
+        card.appendChild(canvas);
+    } else {
+        const div = document.createElement('div');
+        div.textContent = new Date().toLocaleTimeString();
+        card.appendChild(div);
+    }
+    return card;
+}
+
+/**
+ * Draws an analog clock on the provided canvas element,
+ * including a clock face, hour hand, and minute hand pointing to the current time
+ * @param {HTMLCanvasElement} canvas - The canvas element to draw the clock on
+ * @returns {void}
+ */
+/* istanbul ignore next */
+function drawAnalogClock(canvas) {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    let radius = canvas.height / 2;
+    ctx.translate(radius, radius);
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    const now = new Date();
+
+    const hourAngle = ((now.getHours() % 12) / 12) * 2 * Math.PI;
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(
+    Math.sin(hourAngle) * radius * 0.5,
+    -Math.cos(hourAngle) * radius * 0.5
+);
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    const minuteAngle = ((now.getMinutes() / 60)) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(
+    Math.sin(minuteAngle) * radius * 0.7,
+    -Math.cos(minuteAngle) * radius * 0.7
+);
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+}
 
 
 // ============================================================
@@ -168,6 +320,39 @@ function parseRssFeed(xmlString) {
 // Entry point - wires everything together
 // Runs on DOMContentLoaded
 // ============================================================
-/* istanbul ignore next */
 
-export { loadConfig, validateConfig, registerComponent, getComponent, buildImage, parseRssFeed };
+/**
+ * Bootstraps the application by loading the configuration, registering components, and rendering them in their respective zones
+ * This function is called when the DOMContentLoaded event is fired, ensuring that the DOM is fully loaded before attempting to manipulate it
+ * It handles errors gracefully by catching exceptions and displaying an error message on the page if the configuration fails to load or is invalid
+ */
+/* istanbul ignore next */
+async function bootstrap() {
+    try {
+        const validZones = Array.from(document.querySelectorAll('.zone')).map(el => el.id);
+        const config = await loadConfig(validZones);
+        document.documentElement.style.setProperty('--color-bg', config.theme?.background ?? '#111111');
+        document.documentElement.style.setProperty('--color-text', config.theme?.color ?? '#ffffff');
+        document.documentElement.style.setProperty('--font-family', config.theme?.fontFamily ?? 'sans-serif');
+        registerComponents();
+        for (const [i, component] of config.components.entries()) {
+            const builder = getComponent(component.type);
+            const element = await builder(component, `component-${i}`);
+            document.getElementById(component.zone).appendChild(element);
+            if (component.refresh) {
+                // Call the scheduler to set up refresh intervals for this component
+            }
+        }
+    }
+    catch (error) {
+        console.error("Error during bootstrap:", error);
+        const errorElement = document.createElement('div');
+        errorElement.style.color = 'red';
+        errorElement.textContent = `Error loading configuration: ${error.message}`;
+        document.body.appendChild(errorElement);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', bootstrap);
+
+export { loadConfig, validateConfig, validateLayout, validateComponents, validateComponent, registerComponent, getComponent, buildImage, bootstrap, buildClock, buildRss, parseRssFeed };
