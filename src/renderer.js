@@ -144,6 +144,14 @@ function buildImage(component){
     return img;
 }
 
+function parseRssFeed(xmlString) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlString, 'text/xml');
+    const items = doc.querySelectorAll('item');
+    const titles = Array.from(items).map(item => item.querySelector('title').textContent);
+    return titles;
+}
+
 
 
 // ============================================================
@@ -162,4 +170,4 @@ function buildImage(component){
 // ============================================================
 /* istanbul ignore next */
 
-export { loadConfig, validateConfig, registerComponent, getComponent, buildImage };
+export { loadConfig, validateConfig, registerComponent, getComponent, buildImage, parseRssFeed };
