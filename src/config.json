@@ -1,9 +1,0 @@
-{
-  "layout": {
-    "zones": ["header", "main"]
-  },
-  "components": [
-    { "zone": "header", "type": "clock", "refresh": 1000, "mode": "digital" },
-    { "zone": "main", "type": "weather", "url": "https://api.open-meteo.com/v1/forecast?latitude=39.74&longitude=-104.99&current=temperature_2m,weathercode,relative_humidity_2m,wind_speed_10m,apparent_temperature&temperature_unit=fahrenheit&wind_speed_unit=mph" }
-  ]
-}
