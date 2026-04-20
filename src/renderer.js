@@ -378,14 +378,7 @@ async function bootstrap() {
         document.documentElement.style.setProperty('--color-text', config.theme?.color ?? '#ffffff');
         document.documentElement.style.setProperty('--font-family', config.theme?.fontFamily ?? 'sans-serif');
         registerComponents();
-        for (const [i, component] of config.components.entries()) {
-            const builder = getComponent(component.type);
-            const element = await builder(component, `component-${i}`);
-            document.getElementById(component.zone).appendChild(element);
-            if (component.refresh) {
-                // Call the scheduler to set up refresh intervals for this component
-            }
-        }
+        scheduleAll(config.components);
     }
     catch (error) {
         console.error("Error during bootstrap:", error);
@@ -395,9 +388,9 @@ async function bootstrap() {
         document.body.appendChild(errorElement);
     }
 }
-
+ 
 document.addEventListener('DOMContentLoaded', bootstrap);
-
+ 
 export { loadConfig, 
     validateConfig, 
     validateLayout, 
