@@ -251,16 +251,16 @@ function buildWeather(data, id) {
 
     const humidity = document.createElement('div');
     humidity.className = 'weather-humidity';
-    humidity.textContent = `Humidity: ${ data.current.relative_humidity_2m}%`;
+    humidity.innerHTML = `<span>Humidity</span><span>${data.current.relative_humidity_2m}%</span>`;
 
     const wind = document.createElement('div');
     wind.className = 'weather-wind';
-    wind.textContent = `Wind: ${data.current.wind_speed_10m} mph`;
+    wind.innerHTML = `<span>Wind</span><span>${data.current.wind_speed_10m} mph</span>`;
 
     const feelsLike = document.createElement('div');
     feelsLike.className = 'weather-feels-like';
-    feelsLike.textContent = `Feels like: ${ data.current.apparent_temperature}°`;
-
+    feelsLike.innerHTML = `<span>Feels like</span><span>${data.current.apparent_temperature}°F</span>`;
+    
     card.appendChild(city);
     card.appendChild(temp);
     card.appendChild(condition);
