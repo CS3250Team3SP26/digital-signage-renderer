@@ -100,7 +100,7 @@ describe('buildWeather', () => {
 describe('fetchWeatherData', () => {
     it('should return parsed JSON from the URL', async () => {
         const fakeData = { city: 'Denver', temperature: 72, condition: 'Sunny' };
-        global.fetch = jest.fn().mockResolvedValue({
+        globalThis.fetch = jest.fn().mockResolvedValue({
             ok: true,
             json: async () => fakeData,
         });
@@ -110,7 +110,7 @@ describe('fetchWeatherData', () => {
     });
 
     it('should throw if the response is not ok', async () => {
-        global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 404 });
+        globalThis.fetch = jest.fn().mockResolvedValue({ ok: false, status: 404 });
 
         await expect(fetchWeatherData('https://fake.weather/api'))
             .rejects.toThrow('Weather fetch failed: 404');
