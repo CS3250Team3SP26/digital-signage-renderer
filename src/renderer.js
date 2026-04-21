@@ -124,8 +124,10 @@ const registry = new Map();
 const REQUIRED_COMPONENT_FIELDS = {
     image: ['src', 'alt'],
     clock: [], // no required fields for clock, mode is optional
-    rss: ['url']
+    rss: ['url'],
+    weather: ['url'],
 };
+
 
 /**
  * Registers all component types with their corresponding builder functions
@@ -136,10 +138,15 @@ const REQUIRED_COMPONENT_FIELDS = {
 function registerComponents() {
     // To register a new component add it below
     // ex. registerComponent('type', buildType)
-    registerComponent('rss', buildRss);
     registerComponent('image', buildImage);
     registerComponent('clock', buildClock);
+    registerComponent('rss', buildRss);
+    registerComponent('weather', async (component, id) => { 
+        const data = await fetchWeatherData(component.url);
+        return buildWeather(data, id);
+    });
 }
+
 
 /**
  * Registers a component type with its corresponding builder function
@@ -196,6 +203,75 @@ function buildImage(component, id){
     img.setAttribute('alt', component.alt);
 
     card.appendChild(img);
+    return card;
+}
+/**
+ * Fetches weather data from the provided URL
+ * @param {string} url - The URL to fetch weather data from
+ * @returns {Promise<Object>} The weather data object
+ */
+async function fetchWeatherData(url) {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Weather fetch failed: ${response.status}`);
+    }
+    return response.json();
+}
+/**
+ * Builds a weather component element from weather data
+ * @param {Object} data - The weather data object (e.g. from an API response)
+ * @param {string} id - The unique identifier to set as data-component-id
+ * @returns {HTMLElement} The constructed weather card element
+ */
+function buildWeather(data, id) {
+    const card = document.createElement('div');
+    card.className = 'component-card';
+    card.dataset.componentId = id;
+
+    const weatherDescriptions = {
+        0: "Clear sky",
+        1: "Mainly clear",
+        2: "Partly cloudy",
+        3: "Overcast",
+        45: "Foggy",
+        61: "Light rain",
+        63: "Moderate rain",
+        80: "Rain showers",
+        95: "Thunderstorm"
+    };
+
+    const city = document.createElement('div');
+    city.className = 'weather-city';
+    city.textContent = "Denver";
+
+    const temp = document.createElement('div');
+    temp.className = 'weather-temp';
+    temp.textContent = `${data.current.temperature_2m}°`;
+
+    const condition = document.createElement('div');
+    condition.className = 'weather-condition';
+    condition.textContent = weatherDescriptions[data.current.weathercode];
+
+    const humidity = document.createElement('div');
+    humidity.className = 'weather-humidity';
+    humidity.innerHTML = `<span>Humidity</span><span>${data.current.relative_humidity_2m}%</span>`;
+
+    const wind = document.createElement('div');
+    wind.className = 'weather-wind';
+    wind.innerHTML = `<span>Wind</span><span>${data.current.wind_speed_10m} mph</span>`;
+
+    const feelsLike = document.createElement('div');
+    feelsLike.className = 'weather-feels-like';
+    feelsLike.innerHTML = `<span>Feels like</span><span>${data.current.apparent_temperature}°F</span>`;
+    
+    card.appendChild(city);
+    card.appendChild(temp);
+    card.appendChild(condition);
+    card.appendChild(humidity);
+    card.appendChild(wind);
+    card.appendChild(feelsLike);
+
+
     return card;
 }
 
@@ -355,4 +431,18 @@ async function bootstrap() {
 
 document.addEventListener('DOMContentLoaded', bootstrap);
 
-export { loadConfig, validateConfig, validateLayout, validateComponents, validateComponent, registerComponent, getComponent, buildImage, bootstrap, buildClock, buildRss, parseRssFeed };
+export { loadConfig, 
+    validateConfig, 
+    validateLayout, 
+    validateComponents, 
+    validateComponent, 
+    registerComponent, 
+    getComponent, 
+    buildImage,
+    bootstrap,
+    buildClock,
+    buildWeather,
+    fetchWeatherData,
+    buildRss,
+    parseRssFeed
+};
