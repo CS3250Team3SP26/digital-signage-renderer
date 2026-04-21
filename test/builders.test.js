@@ -1,5 +1,5 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { buildImage, buildClock , buildWeather,fetchWeatherData} from '../src/renderer.js';
+import { buildImage, buildClock , buildWeather, buildText, fetchWeatherData} from '../src/renderer.js';
 
 
 describe('buildImage', () => {
@@ -96,7 +96,37 @@ describe('buildWeather', () => {
         expect(result.querySelector('.weather-condition').textContent).toBe('Clear sky');
     });
 });
+describe('buildText', () => {
 
+    it('should return a component-card wrapper div', () => {
+        const result = buildText(
+            { content: 'Welcome students' },
+            'component-9'
+        );
+
+        expect(result.tagName).toBe('DIV');
+        expect(result.classList.contains('component-card')).toBe(true);
+    });
+
+    it('should stamp data-component-id on the card', () => {
+        const result = buildText(
+            { content: 'Welcome students' },
+            'component-9'
+        );
+
+        expect(result.dataset.componentId).toBe('component-9');
+    });
+
+    it('should display the correct text', () => {
+        const result = buildText(
+            { content: 'Welcome students' },
+            'component-9'
+        );
+
+        expect(result.textContent).toContain('Welcome students');
+    });
+
+});
 describe('fetchWeatherData', () => {
     it('should return parsed JSON from the URL', async () => {
         const fakeData = { city: 'Denver', temperature: 72, condition: 'Sunny' };
