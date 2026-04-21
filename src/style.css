@@ -90,3 +90,41 @@ html, body {
   min-height: 0;
   flex: 1;
 }
+/* ============================================================
+   WEATHER COMPONENT
+   ============================================================ */
+   .component-card:has(.weather-temp) {
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0.2em;
+  }
+  
+  .weather-city {
+    font-size: 0.6em;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #888888;
+  }
+  
+  .weather-temp {
+    font-size: 3.5em;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.1;
+  }
+  
+  .weather-condition {
+    font-size: 1em;
+    color: #aaaaaa;
+    margin-bottom: 0.5em;
+  }
+  
+  .weather-humidity,
+  .weather-wind,
+  .weather-feels-like {
+  font-size: 0.85em;
+  color: #aaaaaa;
+  display: flex;
+  justify-content: space-between;
+}

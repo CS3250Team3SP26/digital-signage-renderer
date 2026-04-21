@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
-import { buildImage, buildClock } from '../src/renderer.js';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { buildImage, buildClock , buildWeather,fetchWeatherData} from '../src/renderer.js';
 
 
 describe('buildImage', () => {
@@ -66,4 +66,53 @@ describe('buildClock', () => {
         expect(result.querySelector('canvas')).not.toBeNull();
     });
 
+});
+describe('buildWeather', () => {
+    const fakeData = { current: { temperature_2m: 72, weathercode: 0 } };
+
+    it('should return a component-card wrapper div', () => {
+        const result = buildWeather(fakeData, 'component-5');
+        expect(result.tagName).toBe('DIV');
+        expect(result.classList.contains('component-card')).toBe(true);
+    });
+
+    it('should stamp data-component-id on the card', () => {
+        const result = buildWeather(fakeData, 'component-5');
+        expect(result.dataset.componentId).toBe('component-5');
+    });
+
+    it('should display the city name', () => {
+        const result = buildWeather(fakeData, 'component-5');
+        expect(result.querySelector('.weather-city').textContent).toBe('Denver');
+    });
+
+    it('should display the temperature', () => {
+        const result = buildWeather(fakeData, 'component-5');
+        expect(result.querySelector('.weather-temp').textContent).toBe('72°');
+    });
+
+    it('should display the condition', () => {
+        const result = buildWeather(fakeData, 'component-5');
+        expect(result.querySelector('.weather-condition').textContent).toBe('Clear sky');
+    });
+});
+
+describe('fetchWeatherData', () => {
+    it('should return parsed JSON from the URL', async () => {
+        const fakeData = { city: 'Denver', temperature: 72, condition: 'Sunny' };
+        globalThis.fetch = jest.fn().mockResolvedValue({
+            ok: true,
+            json: async () => fakeData,
+        });
+
+        const result = await fetchWeatherData('https://fake.weather/api');
+        expect(result).toEqual(fakeData);
+    });
+
+    it('should throw if the response is not ok', async () => {
+        globalThis.fetch = jest.fn().mockResolvedValue({ ok: false, status: 404 });
+
+        await expect(fetchWeatherData('https://fake.weather/api'))
+            .rejects.toThrow('Weather fetch failed: 404');
+    });
 });
