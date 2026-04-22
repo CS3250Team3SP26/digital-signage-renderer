@@ -152,6 +152,11 @@ html, body {
       flex-direction: column;
       justify-content: center; /* centers content vertically in the card */
     }
+    
+    .clock-card svg {
+      width: 100%;
+      height: 100%;
+    }
 
     .clock-time {
       font-size: 2em;

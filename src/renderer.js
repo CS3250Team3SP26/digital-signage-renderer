@@ -285,9 +285,8 @@ function buildClock(component, id) {
     card.dataset.componentId = id;
 
     if (component.mode === "analog") {
-        const canvas = document.createElement('canvas') 
-        drawAnalogClock(canvas);
-        card.appendChild(canvas);
+        const clock = drawAnalogClock();
+        card.appendChild(clock);
     } else {
         const time = document.createElement('div');
         time.className = 'clock-time';
@@ -307,46 +306,83 @@ function buildClock(component, id) {
     }
     return card;
 }
-/**
- * Draws an analog clock on the provided canvas element,
- * including a clock face, hour hand, and minute hand pointing to the current time
- * @param {HTMLCanvasElement} canvas - The canvas element to draw the clock on
- * @returns {void}
- */
+
+
 /* istanbul ignore next */
-function drawAnalogClock(canvas) {
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    let radius = canvas.height / 2;
-    ctx.translate(radius, radius);
-    ctx.beginPath();
-    ctx.arc(0, 0, radius, 0, 2 * Math.PI);
-    ctx.fillStyle = 'white';
-    ctx.fill();
-    const now = new Date();
+function drawAnalogClock() {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 100 100');
 
-    const hourAngle = ((now.getHours() % 12) / 12) * 2 * Math.PI;
+    // clock face
+    const face = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    face.setAttribute('cx', '50');   // center x
+    face.setAttribute('cy', '50');   // center y
+    face.setAttribute('r', '48');    // radius
+    face.setAttribute('fill', '#1a1a1a');
+    face.setAttribute('stroke', 'rgba(255,255,255,0.1)');
+    face.setAttribute('stroke-width', '0.5');
+    svg.appendChild(face);
 
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(
-    Math.sin(hourAngle) * radius * 0.5,
-    -Math.cos(hourAngle) * radius * 0.5
-);
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = 4;
-    ctx.stroke();
+    // hour ticks
+    for (let i = 0; i < 12; i++) {
+        const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        tick.setAttribute('x1', '50');
+        tick.setAttribute('y1', '5');   // outer edge
+        tick.setAttribute('x2', '50');
+        tick.setAttribute('y2', '10');  // inner edge — length of tick
+        tick.setAttribute('stroke', 'rgba(255,255,255,0.5)');
+        tick.setAttribute('stroke-width', '1');
+        tick.setAttribute('transform', `rotate(${i * 30}, 50, 50)`);
+        svg.appendChild(tick);
+    }
 
-    const minuteAngle = ((now.getMinutes() / 60)) * 2 * Math.PI;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(
-    Math.sin(minuteAngle) * radius * 0.7,
-    -Math.cos(minuteAngle) * radius * 0.7
-);
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = 4;
-    ctx.stroke();
+    const time = new Date();
+
+    // minute hand
+    const minuteHand = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    minuteHand.setAttribute('x1', '50');  // start x (center)
+    minuteHand.setAttribute('y1', '50');  // start y (center)
+    minuteHand.setAttribute('x2', '50');  // end x (pointing straight up)
+    minuteHand.setAttribute('y2', '10');  // end y (toward 12 o'clock)
+    minuteHand.setAttribute('stroke', 'white');
+    minuteHand.setAttribute('stroke-width', '1.5');
+    minuteHand.setAttribute('stroke-linecap', 'round'); // rounded tip
+    minuteHand.setAttribute('transform', `rotate(${time.getMinutes() * 6}, 50, 50)`); // Rotate based on minutes
+    svg.appendChild(minuteHand);
+
+    // hour hand
+    const hourHand = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    hourHand.setAttribute('x1', '50');  // start x (center)
+    hourHand.setAttribute('y1', '50');  // start y (center)
+    hourHand.setAttribute('x2', '50');  // end x (pointing straight up)
+    hourHand.setAttribute('y2', '10');  // end y (toward 12 o'clock)
+    hourHand.setAttribute('stroke', 'white');
+    hourHand.setAttribute('stroke-width', '1.5');
+    hourHand.setAttribute('stroke-linecap', 'round'); // rounded tip
+    hourHand.setAttribute('transform', `rotate(${(time.getHours() % 12) * 30 + time.getMinutes() / 2}, 50, 50)`); // Rotate based on hours and minutes
+    svg.appendChild(hourHand);
+
+    // second hand
+    const secondHand = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    secondHand.setAttribute('x1', '50');
+    secondHand.setAttribute('y1', '50');
+    secondHand.setAttribute('x2', '50');
+    secondHand.setAttribute('y2', '8');
+    secondHand.setAttribute('stroke', 'rgba(255, 255, 255, 0.26)');
+    secondHand.setAttribute('stroke-width', '1');
+    secondHand.setAttribute('stroke-linecap', 'round');
+    secondHand.setAttribute('transform', `rotate(${time.getSeconds() * 6}, 50, 50)`);
+    svg.appendChild(secondHand);
+
+    // center dot
+    const center = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    center.setAttribute('cx', '50');
+    center.setAttribute('cy', '50');
+    center.setAttribute('r', '1.5');
+    center.setAttribute('fill', 'white');
+    svg.appendChild(center);
+
+    return svg;
 }
 
 
