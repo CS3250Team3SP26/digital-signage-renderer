@@ -278,9 +278,9 @@ function drawAnalogClock(canvas) {
  * @param {Object} component The component configuration object to render
  * @param {HTMLElement} zoneElem the targetzone DOM element
  */
-function renderComponent(component, zoneElem) {
+function renderComponent(component, zoneElem, id) {
     const builder = getComponent(component.type);
-    const element = builder(component);
+    const element = builder(component, id);
     zoneElem.innerHTML = '';
     zoneElem.appendChild(element);
 }
@@ -299,25 +299,14 @@ function renderComponent(component, zoneElem) {
  * @returns {Function} cancel - A zero-argument function that stops the interval
  */
 function scheduleComponent(component, zoneElem){
-    //initial render
-    renderComponent(component, zoneElem);
- 
-    let intervalId = null;
- 
-    if (typeof component.refresh === 'number' && component.refresh > 0) {
-        intervalId = setInterval(() => {
-            renderComponent(component, zoneElem);
-        }, component.refresh);
- 
-    }
+    const intervalId = setInterval(() => {
+        renderComponent(component, zoneElem);
+    }, component.refresh);
  
     return {
         intervalId,
         cancel() {
-            if (intervalId !== null) {
-                clearInterval(intervalId);
-                intervalId = null;
-            }
+            clearInterval(intervalId);
         }
     };
 }
@@ -336,6 +325,8 @@ function scheduleAll(components) {
     const handles = [];
  
     for (const component of components) {
+        if (typeof component.refresh !== 'number' || component.refresh <= 0) continue;
+ 
         const zoneElem = document.getElementById(component.zone);
         if (!zoneElem) {
             console.warn('Zone element with id ' + component.zone + ' not found for component of type ' + component.type);
@@ -345,6 +336,7 @@ function scheduleAll(components) {
     }
     return handles;
 }
+
 
 /**
  * Cancels all active scheduler handles rerturned by scheduleAll
@@ -378,6 +370,18 @@ async function bootstrap() {
         document.documentElement.style.setProperty('--color-text', config.theme?.color ?? '#ffffff');
         document.documentElement.style.setProperty('--font-family', config.theme?.fontFamily ?? 'sans-serif');
         registerComponents();
+ 
+        // Initial render of all components
+        for (const [i, component] of config.components.entries()) {
+            const zoneElem = document.getElementById(component.zone);
+            if (!zoneElem) {
+                console.warn('Zone element with id ' + component.zone + ' not found for component of type ' + component.type);
+                continue;
+            }
+            renderComponent(component, zoneElem, `component-${i}`);
+        }
+ 
+        // Hand off components that need periodic refresh to the scheduler
         scheduleAll(config.components);
     }
     catch (error) {
@@ -390,7 +394,7 @@ async function bootstrap() {
 }
  
 document.addEventListener('DOMContentLoaded', bootstrap);
- 
+
 export { loadConfig, 
     validateConfig, 
     validateLayout, 
