@@ -6,3 +6,6 @@ coverage/
 
 # Assets
 assets/
+
+# AI
+.claude/
