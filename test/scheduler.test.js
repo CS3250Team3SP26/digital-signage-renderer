@@ -27,19 +27,20 @@ function clearDOM() {
     document.body.innerHTML = '';
 }
 
-/** A minimal builder stub that returns a <span> containing a counter value. */
+/** A minimal builder stub that returns a <span> containing a counter value, with data-component-id stamped. */
 function makeBuilder(label = 'item') {
     let count = 0;
-    const build = jest.fn(() => {
+    const build = jest.fn((_component, id) => {
         const span = document.createElement('span');
         span.textContent = `${label}-${++count}`;
+        span.dataset.componentId = id;
         return span;
     });
     return build;
 }
 
 // ==============================================================================
-//                                  SETOUP
+//                                   SETUP
 // ==============================================================================
 
 beforeEach(() => {
@@ -62,14 +63,14 @@ afterEach(() => {
 // ==============================================================================
 
 describe('renderComponent', () => {
-    test('calls the registered builder and appends the result to the zone', () => {
+    test('calls the registered builder and appends the result to the zone', async () => {
         const builder = jest.fn(() => document.createElement('img'));
         registerComponent('photo', builder);
 
         const zone = createZone('z1');
         const component = { type: 'photo', zone: 'z1' };
 
-        renderComponent(component, zone);
+        await renderComponent(component, zone);
 
         expect(builder).toHaveBeenCalledTimes(1);
         expect(builder).toHaveBeenCalledWith(component, undefined);
@@ -77,30 +78,40 @@ describe('renderComponent', () => {
         expect(zone.children[0].tagName).toBe('IMG');
     });
 
-    test('clears existing zone content before appending the new element', () => {
+    test('replaces the existing card by data-component-id, leaving other zone children intact', async () => {
         const zone = createZone('z2');
-        zone.innerHTML = '<p>old content</p><p>more old content</p>';
 
-        registerComponent('clean', () => document.createElement('span'));
-        renderComponent({ type: 'clean', zone: 'z2' }, zone);
+        const other = document.createElement('div');
+        other.dataset.componentId = 'component-99';
+        zone.appendChild(other);
 
-        expect(zone.children).toHaveLength(1);
-        expect(zone.querySelector('p')).toBeNull();
+        registerComponent('clean', () => {
+            const el = document.createElement('span');
+            el.dataset.componentId = 'component-0';
+            return el;
+        });
+
+        await renderComponent({ type: 'clean', zone: 'z2' }, zone, 'component-0');
+        await renderComponent({ type: 'clean', zone: 'z2' }, zone, 'component-0');
+
+        expect(zone.children).toHaveLength(2); // other card still present
+        expect(zone.querySelector('[data-component-id="component-99"]')).not.toBeNull();
+        expect(zone.querySelector('[data-component-id="component-0"]').tagName).toBe('SPAN');
     });
 
-    test('throws when the component type has no registered builder', () => {
+    test('throws when the component type has no registered builder', async () => {
         const zone = createZone('z3');
-        expect(() =>
+        await expect(
             renderComponent({ type: 'unregistered', zone: 'z3' }, zone)
-        ).toThrow(/unregistered/);
+        ).rejects.toThrow(/unregistered/);
     });
 
-    test('renders on every call (called multiple times, zone always has one child)', () => {
+    test('replaces the same card on repeated renders, not appending duplicates', async () => {
         const zone = createZone('z4');
         registerComponent('counter', makeBuilder('c'));
 
         for (let i = 0; i < 5; i++) {
-            renderComponent({ type: 'counter', zone: 'z4' }, zone);
+            await renderComponent({ type: 'counter', zone: 'z4' }, zone, 'component-0');
             expect(zone.children).toHaveLength(1);
         }
     });
@@ -305,7 +316,7 @@ describe('cancelAll', () => {
         const zone2 = createZone('ca6');
 
         const h1 = scheduleComponent({ type: 'ind', zone: 'ca5', refresh: 300 }, zone1, 'component-0');
-        const h2 = scheduleComponent({ type: 'ind', zone: 'ca6', refresh: 300 }, zone2, 'component-1');
+        scheduleComponent({ type: 'ind', zone: 'ca6', refresh: 300 }, zone2, 'component-1');
 
         h1.cancel();
         jest.advanceTimersByTime(900); // 3 ticks

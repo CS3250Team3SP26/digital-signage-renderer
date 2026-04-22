@@ -405,11 +405,15 @@ function drawAnalogClock() {
  * @param {Object} component The component configuration object to render
  * @param {HTMLElement} zoneElem the targetzone DOM element
  */
-function renderComponent(component, zoneElem, id) {
+async function renderComponent(component, zoneElem, id) {
     const builder = getComponent(component.type);
-    const element = builder(component, id);
-    zoneElem.innerHTML = '';
-    zoneElem.appendChild(element);
+    const element = await builder(component, id);
+    const existing = zoneElem.querySelector(`[data-component-id="${id}"]`);
+    if (existing) {
+        zoneElem.replaceChild(element, existing);
+    } else {
+        zoneElem.appendChild(element);
+    }
 }
 
 /**
@@ -429,8 +433,8 @@ function scheduleComponent(component, zoneElem, id) {
     if (typeof component.refresh !== 'number' || component.refresh <= 0) {
         return { intervalId: null, cancel() {} };
     }
-    const intervalId = setInterval(() => {
-        renderComponent(component, zoneElem, id);
+    const intervalId = setInterval(async () => {
+        await renderComponent(component, zoneElem, id);
     }, component.refresh);
     return {
         intervalId,
@@ -477,7 +481,7 @@ async function bootstrap() {
         for (const [i, component] of config.components.entries()) {
             const id = `component-${i}`;
             const zoneElem = zoneElems.get(component.zone);
-            renderComponent(component, zoneElem, id);
+            await renderComponent(component, zoneElem, id);
             if (component.refresh) {
                 scheduleComponent(component, zoneElem, id);
             }
