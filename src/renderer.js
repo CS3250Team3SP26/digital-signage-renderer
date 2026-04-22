@@ -399,6 +399,61 @@ function drawAnalogClock() {
 // ============================================================
 /* istanbul ignore next */
 
+/**
+ * Rendes a single component into the target zone
+ * Clears the zones exsisting content and bulds the DOm elemetn and appends it
+ * @param {Object} component The component configuration object to render
+ * @param {HTMLElement} zoneElem the targetzone DOM element
+ */
+async function renderComponent(component, zoneElem, id) {
+    const builder = getComponent(component.type);
+    const element = await builder(component, id);
+    const existing = zoneElem.querySelector(`[data-component-id="${id}"]`);
+    if (existing) {
+        existing.replaceWith(element);
+    } else {
+        zoneElem.appendChild(element);
+    }
+}
+
+/**
+ * Schedules a component to be rendered and an optional periodic refresh
+ * 
+ * - Renders the component immediately on call
+ * - If the 'component.refresh' is a positive number, it sets up a repeating interval that re-renders the component at that cadence
+ * - Returns a cleanup handle so callers can cancel the interval later 
+ * 
+ * @param {Object} component The component config object
+ * @param {HTMLElement} zoneElem the target zone DOM element
+ * @returns {Object} An object with intervalId and cancel properties
+ * @returns {(number|null)} intervalId - The value returned by setInterval, or null if no interval was created
+ * @returns {Function} cancel - A zero-argument function that stops the interval
+ */
+function scheduleComponent(component, zoneElem, id) {
+    if (typeof component.refresh !== 'number' || component.refresh <= 0) {
+        return { intervalId: null, cancel() {} };
+    }
+    const intervalId = setInterval(async () => {
+        await renderComponent(component, zoneElem, id);
+    }, component.refresh);
+    return {
+        intervalId,
+        cancel() {
+            clearInterval(intervalId);
+        }
+    };
+}
+
+/**
+ * Cancels all active scheduler handles returned by bootstrap
+ * Safe to call multiple times; already-cancelled handles are no-ops
+ * @param {Array<{ cancel: Function }>} handles
+ */
+function cancelAll(handles) {
+    for (const handle of handles) {
+        handle.cancel();
+    }
+}
 
 
 // ============================================================
@@ -415,19 +470,20 @@ function drawAnalogClock() {
 /* istanbul ignore next */
 async function bootstrap() {
     try {
-        const validZones = Array.from(document.querySelectorAll('.zone')).map(el => el.id);
-        const config = await loadConfig(validZones);
+        const zoneElems = new Map(Array.from(document.querySelectorAll('.zone')).map(el => [el.id, el]));
+        const config = await loadConfig(Array.from(zoneElems.keys()));
         document.documentElement.style.setProperty('--color-bg', config.theme?.background ?? '#111111');
         document.documentElement.style.setProperty('--color-text', config.theme?.color ?? '#ffffff');
         document.documentElement.style.setProperty('--color-secondary', config.theme?.secondaryColor ?? '#888888');
         document.documentElement.style.setProperty('--font-family', config.theme?.fontFamily ?? 'sans-serif');
         registerComponents();
+
         for (const [i, component] of config.components.entries()) {
-            const builder = getComponent(component.type);
-            const element = await builder(component, `component-${i}`);
-            document.getElementById(component.zone).appendChild(element);
+            const id = `component-${i}`;
+            const zoneElem = zoneElems.get(component.zone);
+            await renderComponent(component, zoneElem, id);
             if (component.refresh) {
-                // Call the scheduler to set up refresh intervals for this component
+                scheduleComponent(component, zoneElem, id);
             }
         }
     }
@@ -452,6 +508,9 @@ export { loadConfig,
     buildImage,
     bootstrap,
     buildClock,
+    scheduleComponent,
+    cancelAll,
+    renderComponent,
     buildWeather,
     fetchWeatherData,
 };
