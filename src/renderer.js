@@ -410,7 +410,7 @@ async function renderComponent(component, zoneElem, id) {
     const element = await builder(component, id);
     const existing = zoneElem.querySelector(`[data-component-id="${id}"]`);
     if (existing) {
-        zoneElem.replaceChild(element, existing);
+        existing.replaceWith(element);
     } else {
         zoneElem.appendChild(element);
     }
