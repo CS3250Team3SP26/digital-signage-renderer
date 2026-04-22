@@ -305,7 +305,7 @@ describe('cancelAll', () => {
         const zone2 = createZone('ca6');
 
         const h1 = scheduleComponent({ type: 'ind', zone: 'ca5', refresh: 300 }, zone1, 'component-0');
-        const h2 = scheduleComponent({ type: 'ind', zone: 'ca6', refresh: 300 }, zone2, 'component-1');
+        scheduleComponent({ type: 'ind', zone: 'ca6', refresh: 300 }, zone2, 'component-1');
 
         h1.cancel();
         jest.advanceTimersByTime(900); // 3 ticks
