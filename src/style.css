@@ -70,12 +70,13 @@ html, body {
    min-height: 0 allows flex children to shrink below natural size
    ============================================================ */
 .component-card {
-  background-color: color-mix(in srgb, var(--color-bg, #111111) 85%, white); /* Slightly lighter than root background */
+  background-color: color-mix(in srgb, var(--color-bg, #111111) 97%, white); /* Slightly lighter than root background */
   display: flex;
   border-radius: 0.4em;
   padding: 0.5em;
   flex: 1;
   min-height: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* ============================================================
@@ -89,4 +90,19 @@ html, body {
   object-fit: cover;
   min-height: 0;
   flex: 1;
+}
+
+.clock-card {
+  flex-direction: column;
+  justify-content: center; /* centers content vertically in the card */
+}
+
+.clock-time {
+  font-size: 2em;
+  font-weight: bold;
+}
+
+.clock-date {
+  font-size: 1.2em;
+  color: var(--color-secondary, #888888);
 }

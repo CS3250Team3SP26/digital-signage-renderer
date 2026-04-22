@@ -208,7 +208,7 @@ function buildImage(component, id){
  */
 function buildClock(component, id) {
     const card = document.createElement('div');
-    card.className = 'component-card';
+    card.className = 'component-card clock-card';
     card.dataset.componentId = id;
 
     if (component.mode === "analog") {
@@ -216,9 +216,21 @@ function buildClock(component, id) {
         drawAnalogClock(canvas);
         card.appendChild(canvas);
     } else {
-        const div = document.createElement('div');
-        div.textContent = new Date().toLocaleTimeString();
-        card.appendChild(div);
+        const time = document.createElement('div');
+        time.className = 'clock-time';
+        time.textContent = new Date().toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+
+        const date = document.createElement('div');
+        date.className = 'clock-date';
+        date.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+        card.appendChild(time);
+        card.appendChild(date);
     }
     return card;
 }
@@ -292,6 +304,7 @@ async function bootstrap() {
         const config = await loadConfig(validZones);
         document.documentElement.style.setProperty('--color-bg', config.theme?.background ?? '#111111');
         document.documentElement.style.setProperty('--color-text', config.theme?.color ?? '#ffffff');
+        document.documentElement.style.setProperty('--color-secondary', config.theme?.secondaryColor ?? '#888888');
         document.documentElement.style.setProperty('--font-family', config.theme?.fontFamily ?? 'sans-serif');
         registerComponents();
         for (const [i, component] of config.components.entries()) {
