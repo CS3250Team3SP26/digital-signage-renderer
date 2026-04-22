@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { jest, describe, it, expect } from '@jest/globals';
 import { buildImage, buildClock , buildWeather,fetchWeatherData} from '../src/renderer.js';
 
 
@@ -39,10 +39,6 @@ describe('buildImage', () => {
 
 describe('buildClock', () => {
 
-    beforeEach(() => {
-        HTMLCanvasElement.prototype.getContext = () => null;
-    });
-
     it('should return a component-card wrapper div', () => {
         const result = buildClock({}, 'component-0');
         expect(result.tagName).toBe('DIV');
@@ -61,9 +57,9 @@ describe('buildClock', () => {
         expect(inner.textContent).toBeTruthy();
     });
 
-    it('should contain a canvas element when mode is analog', () => {
+    it('should contain an svg element when mode is analog', () => {
         const result = buildClock({ mode: 'analog' }, 'component-0');
-        expect(result.querySelector('canvas')).not.toBeNull();
+        expect(result.querySelector('svg')).not.toBeNull();
     });
 
 });

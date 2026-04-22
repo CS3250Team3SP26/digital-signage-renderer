@@ -70,61 +70,100 @@ html, body {
    min-height: 0 allows flex children to shrink below natural size
    ============================================================ */
 .component-card {
-  background-color: color-mix(in srgb, var(--color-bg, #111111) 85%, white); /* Slightly lighter than root background */
+  background-color: color-mix(in srgb, var(--color-bg, #111111) 97%, white); /* Slightly lighter than root background */
   display: flex;
   border-radius: 0.4em;
   padding: 0.5em;
   flex: 1;
   min-height: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* ============================================================
    COMPONENT-SPECIFIC STYLES
    ============================================================ */
 
-/* Images fill their card while preserving aspect ratio */
-.component-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  min-height: 0;
-  flex: 1;
-}
-/* ============================================================
-   WEATHER COMPONENT
-   ============================================================ */
-   .component-card:has(.weather-temp) {
-    flex-direction: column;
-    justify-content: flex-start;
-    gap: 0.2em;
-  }
-  
-  .weather-city {
-    font-size: 0.6em;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #888888;
-  }
-  
-  .weather-temp {
-    font-size: 3.5em;
-    font-weight: 700;
-    color: #ffffff;
-    line-height: 1.1;
-  }
-  
-  .weather-condition {
-    font-size: 1em;
-    color: #aaaaaa;
-    margin-bottom: 0.5em;
-  }
-  
-  .weather-humidity,
-  .weather-wind,
-  .weather-feels-like {
-  font-size: 0.85em;
-  color: #aaaaaa;
-  display: flex;
-  justify-content: space-between;
-}
+  /* ============================================================
+    IMAGE COMPONENT
+    ============================================================ */
+    .component-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      min-height: 0;
+      flex: 1;
+    }
+
+  /* ============================================================
+    WEATHER COMPONENT
+    ============================================================ */
+    .component-card:has(.weather-temp) {
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 0.2em;
+    }
+    
+    .weather-city {
+      font-size: 0.6em;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-secondary, #888888);
+    }
+    
+    .weather-temp {
+      font-size: 3.5em;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    
+    .weather-condition {
+      font-size: 1em;
+      color: var(--color-secondary, #888888);
+      margin-bottom: 0.5em;
+    }
+    
+    .weather-humidity,
+    .weather-wind,
+    .weather-feels-like {
+      font-size: 0.85em;
+      color: var(--color-secondary, #888888);
+      display: flex;
+      gap: 1em;
+    }
+
+    .weather-humidity span:first-child,
+    .weather-wind span:first-child,
+    .weather-feels-like span:first-child {
+      width: 5em;
+    }
+
+    .weather-humidity span:last-child,
+    .weather-wind span:last-child,
+    .weather-feels-like span:last-child {
+      width: 5em;
+      text-align: right;
+    }
+
+  /* ============================================================
+    CLOCK COMPONENT
+    ============================================================ */
+    .clock-card {
+      flex-direction: column;
+      justify-content: center; /* centers content vertically in the card */
+    }
+    
+    .clock-card svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .clock-time {
+      font-size: 2em;
+      font-weight: bold;
+    }
+
+    .clock-date {
+      font-size: 1.2em;
+      color: var(--color-secondary, #888888);
+    }
