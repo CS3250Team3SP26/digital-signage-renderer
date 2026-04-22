@@ -6,7 +6,6 @@ import { jest, describe, test, expect, beforeEach, afterEach } from '@jest/globa
 import {
     renderComponent,
     scheduleComponent,
-    scheduleAll,
     cancelAll,
     registerComponent,
 } from '../src/renderer.js';
@@ -73,7 +72,7 @@ describe('renderComponent', () => {
         renderComponent(component, zone);
 
         expect(builder).toHaveBeenCalledTimes(1);
-        expect(builder).toHaveBeenCalledWith(component);
+        expect(builder).toHaveBeenCalledWith(component, undefined);
         expect(zone.children).toHaveLength(1);
         expect(zone.children[0].tagName).toBe('IMG');
     });
@@ -112,22 +111,22 @@ describe('renderComponent', () => {
 // ==============================================================================
 
 describe('scheduleComponent', () => {
-    test('renders the component immediately (before any timers advance)', () => {
+    test('does not render the component on call (bootstrap owns initial render)', () => {
         const builder = jest.fn(() => document.createElement('div'));
         registerComponent('imm', builder);
 
         const zone = createZone('s1');
-        scheduleComponent({ type: 'imm', zone: 's1' }, zone);
+        scheduleComponent({ type: 'imm', zone: 's1', refresh: 1000 }, zone, 'component-0');
 
-        expect(builder).toHaveBeenCalledTimes(1);
-        expect(zone.children).toHaveLength(1);
+        expect(builder).toHaveBeenCalledTimes(0);
+        expect(zone.children).toHaveLength(0);
     });
 
     test('returns a handle with intervalId === null when no refresh is set', () => {
         registerComponent('noref', () => document.createElement('div'));
         const zone = createZone('s2');
 
-        const handle = scheduleComponent({ type: 'noref', zone: 's2' }, zone);
+        const handle = scheduleComponent({ type: 'noref', zone: 's2' }, zone, 'component-0');
 
         expect(handle.intervalId).toBeNull();
         expect(typeof handle.cancel).toBe('function');
@@ -139,7 +138,8 @@ describe('scheduleComponent', () => {
 
         const handle = scheduleComponent(
             { type: 'withref', zone: 's3', refresh: 1000 },
-            zone
+            zone,
+            'component-0'
         );
 
         expect(typeof handle.intervalId).toBe('number');
@@ -151,17 +151,17 @@ describe('scheduleComponent', () => {
         registerComponent('tick', builder);
         const zone = createZone('s4');
 
-        scheduleComponent({ type: 'tick', zone: 's4', refresh: 500 }, zone);
-        expect(builder).toHaveBeenCalledTimes(1); // initial render
+        scheduleComponent({ type: 'tick', zone: 's4', refresh: 500 }, zone, 'component-0');
+        expect(builder).toHaveBeenCalledTimes(0); // bootstrap owns initial render
+
+        jest.advanceTimersByTime(500);
+        expect(builder).toHaveBeenCalledTimes(1);
 
         jest.advanceTimersByTime(500);
         expect(builder).toHaveBeenCalledTimes(2);
 
-        jest.advanceTimersByTime(500);
-        expect(builder).toHaveBeenCalledTimes(3);
-
         jest.advanceTimersByTime(1500); // 3 more ticks
-        expect(builder).toHaveBeenCalledTimes(6);
+        expect(builder).toHaveBeenCalledTimes(5);
     });
 
     test('does NOT set an interval when refresh is 0', () => {
@@ -170,7 +170,8 @@ describe('scheduleComponent', () => {
 
         const handle = scheduleComponent(
             { type: 'zero', zone: 's5', refresh: 0 },
-            zone
+            zone,
+            'component-0'
         );
 
         jest.advanceTimersByTime(10_000);
@@ -183,7 +184,8 @@ describe('scheduleComponent', () => {
 
         const handle = scheduleComponent(
             { type: 'neg', zone: 's6', refresh: -500 },
-            zone
+            zone,
+            'component-0'
         );
 
         jest.advanceTimersByTime(10_000);
@@ -196,7 +198,8 @@ describe('scheduleComponent', () => {
 
         const handle = scheduleComponent(
             { type: 'str', zone: 's7', refresh: '1000' },
-            zone
+            zone,
+            'component-0'
         );
 
         expect(handle.intervalId).toBeNull();
@@ -209,15 +212,16 @@ describe('scheduleComponent', () => {
 
         const handle = scheduleComponent(
             { type: 'stoppable', zone: 's8', refresh: 300 },
-            zone
+            zone,
+            'component-0'
         );
 
         jest.advanceTimersByTime(300);
-        expect(builder).toHaveBeenCalledTimes(2); // initial + 1 tick
+        expect(builder).toHaveBeenCalledTimes(1); // 1 tick (no initial render)
 
         handle.cancel();
         jest.advanceTimersByTime(3000); // would fire 10 more times without cancel
-        expect(builder).toHaveBeenCalledTimes(2); // no additional renders
+        expect(builder).toHaveBeenCalledTimes(1); // no additional renders
     });
 
     test('cancel() is safe to call multiple times (idempotent)', () => {
@@ -226,7 +230,8 @@ describe('scheduleComponent', () => {
 
         const handle = scheduleComponent(
             { type: 'idm', zone: 's9', refresh: 200 },
-            zone
+            zone,
+            'component-0'
         );
 
         expect(() => {
@@ -240,106 +245,9 @@ describe('scheduleComponent', () => {
         registerComponent('noop', () => document.createElement('div'));
         const zone = createZone('s10');
 
-        const handle = scheduleComponent({ type: 'noop', zone: 's10' }, zone);
+        const handle = scheduleComponent({ type: 'noop', zone: 's10' }, zone, 'component-0');
 
         expect(() => handle.cancel()).not.toThrow();
-    });
-});
-
-// ==============================================================================
-//                                SCHEDULE ALL
-// ==============================================================================
-
-describe('scheduleAll', () => {
-    test('returns one handle per component whose zone exists', () => {
-        createZone('a1');
-        createZone('a2');
-
-        registerComponent('t1', () => document.createElement('div'));
-        registerComponent('t2', () => document.createElement('div'));
-
-        const handles = scheduleAll([
-            { type: 't1', zone: 'a1' },
-            { type: 't2', zone: 'a2' },
-        ]);
-
-        expect(handles).toHaveLength(2);
-    });
-
-    test('renders all components immediately', () => {
-        const b1 = jest.fn(() => document.createElement('div'));
-        const b2 = jest.fn(() => document.createElement('div'));
-        registerComponent('c1', b1);
-        registerComponent('c2', b2);
-
-        createZone('a3');
-        createZone('a4');
-
-        scheduleAll([
-            { type: 'c1', zone: 'a3' },
-            { type: 'c2', zone: 'a4' },
-        ]);
-
-        expect(b1).toHaveBeenCalledTimes(1);
-        expect(b2).toHaveBeenCalledTimes(1);
-    });
-
-    test('skips components whose zone element does not exist and emits a warning', () => {
-        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-        registerComponent('missing', () => document.createElement('div'));
-
-        const handles = scheduleAll([
-            { type: 'missing', zone: 'does-not-exist' },
-        ]);
-
-        expect(handles).toHaveLength(0);
-        expect(warnSpy).toHaveBeenCalledTimes(1);
-        expect(warnSpy.mock.calls[0][0]).toMatch(/does-not-exist/);
-
-        warnSpy.mockRestore();
-    });
-
-    test('processes valid zones even when an earlier zone is missing', () => {
-        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-        const builder = jest.fn(() => document.createElement('span'));
-        registerComponent('good', builder);
-        createZone('valid-zone');
-
-        const handles = scheduleAll([
-            { type: 'good', zone: 'missing-zone' },
-            { type: 'good', zone: 'valid-zone' },
-        ]);
-
-        expect(handles).toHaveLength(1);
-        expect(builder).toHaveBeenCalledTimes(1);
-
-        warnSpy.mockRestore();
-    });
-
-    test('returns an empty array for an empty components list', () => {
-        const handles = scheduleAll([]);
-        expect(handles).toEqual([]);
-    });
-
-    test('all refresh intervals fire independently', () => {
-        const b1 = jest.fn(() => document.createElement('div'));
-        const b2 = jest.fn(() => document.createElement('div'));
-        registerComponent('fast', b1);
-        registerComponent('slow', b2);
-
-        createZone('f1');
-        createZone('f2');
-
-        scheduleAll([
-            { type: 'fast', zone: 'f1', refresh: 100 },
-            { type: 'slow', zone: 'f2', refresh: 500 },
-        ]);
-
-        jest.advanceTimersByTime(500);
-
-        // fast: initial + 5 ticks; slow: initial + 1 tick
-        expect(b1).toHaveBeenCalledTimes(6);
-        expect(b2).toHaveBeenCalledTimes(2);
     });
 });
 
@@ -352,20 +260,16 @@ describe('cancelAll', () => {
         const builder = jest.fn(() => document.createElement('div'));
         registerComponent('ca', builder);
 
-        createZone('ca1');
-        createZone('ca2');
+        const zone1 = createZone('ca1');
+        const zone2 = createZone('ca2');
 
-        const handles = scheduleAll([
-            { type: 'ca', zone: 'ca1', refresh: 200 },
-            { type: 'ca', zone: 'ca2', refresh: 200 },
-        ]);
+        const h1 = scheduleComponent({ type: 'ca', zone: 'ca1', refresh: 200 }, zone1, 'component-0');
+        const h2 = scheduleComponent({ type: 'ca', zone: 'ca2', refresh: 200 }, zone2, 'component-1');
 
-        expect(builder).toHaveBeenCalledTimes(2); // two initial renders
-
-        cancelAll(handles);
+        cancelAll([h1, h2]);
         jest.advanceTimersByTime(2000);
 
-        expect(builder).toHaveBeenCalledTimes(2); // no additional renders
+        expect(builder).toHaveBeenCalledTimes(0); // no renders — bootstrap owns initial render
     });
 
     test('is safe to call on an empty array', () => {
@@ -374,42 +278,39 @@ describe('cancelAll', () => {
 
     test('is safe to call multiple times on the same handles', () => {
         registerComponent('safe', () => document.createElement('div'));
-        createZone('ca3');
+        const zone = createZone('ca3');
 
-        const handles = scheduleAll([{ type: 'safe', zone: 'ca3', refresh: 100 }]);
+        const handle = scheduleComponent({ type: 'safe', zone: 'ca3', refresh: 100 }, zone, 'component-0');
 
         expect(() => {
-            cancelAll(handles);
-            cancelAll(handles);
+            cancelAll([handle]);
+            cancelAll([handle]);
         }).not.toThrow();
     });
 
     test('handles without refresh intervals are cancelled without error', () => {
         registerComponent('nointerval', () => document.createElement('div'));
-        createZone('ca4');
+        const zone = createZone('ca4');
 
-        const handles = scheduleAll([{ type: 'nointerval', zone: 'ca4' }]);
+        const handle = scheduleComponent({ type: 'nointerval', zone: 'ca4' }, zone, 'component-0');
 
-        expect(() => cancelAll(handles)).not.toThrow();
+        expect(() => cancelAll([handle])).not.toThrow();
     });
 
     test('cancelling one handle does not affect others', () => {
         const builder = jest.fn(() => document.createElement('span'));
         registerComponent('ind', builder);
 
-        createZone('ca5');
-        createZone('ca6');
+        const zone1 = createZone('ca5');
+        const zone2 = createZone('ca6');
 
-        const handles = scheduleAll([
-            { type: 'ind', zone: 'ca5', refresh: 300 },
-            { type: 'ind', zone: 'ca6', refresh: 300 },
-        ]);
+        const h1 = scheduleComponent({ type: 'ind', zone: 'ca5', refresh: 300 }, zone1, 'component-0');
+        const h2 = scheduleComponent({ type: 'ind', zone: 'ca6', refresh: 300 }, zone2, 'component-1');
 
-        handles[0].cancel(); // cancel only the first
+        h1.cancel();
         jest.advanceTimersByTime(900); // 3 ticks
 
-        // First was cancelled; second fired 3 more times (initial already counted = 4 total)
-        // builder called: 2 initial + 3 ticks from handle[1] = 5
-        expect(builder).toHaveBeenCalledTimes(5);
+        // h1 cancelled, h2 fires 3 ticks
+        expect(builder).toHaveBeenCalledTimes(3);
     });
 });

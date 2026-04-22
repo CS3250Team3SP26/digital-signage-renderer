@@ -298,11 +298,13 @@ function renderComponent(component, zoneElem, id) {
  * @returns {(number|null)} intervalId - The value returned by setInterval, or null if no interval was created
  * @returns {Function} cancel - A zero-argument function that stops the interval
  */
-function scheduleComponent(component, zoneElem){
+function scheduleComponent(component, zoneElem, id) {
+    if (typeof component.refresh !== 'number' || component.refresh <= 0) {
+        return { intervalId: null, cancel() {} };
+    }
     const intervalId = setInterval(() => {
-        renderComponent(component, zoneElem);
+        renderComponent(component, zoneElem, id);
     }, component.refresh);
- 
     return {
         intervalId,
         cancel() {
@@ -312,35 +314,8 @@ function scheduleComponent(component, zoneElem){
 }
 
 /**
- * Schedules all components in the config returning an array of handles
- * that can each be canceled independently or all at once
- * 
- * Components whose target elements do not exist in the DOM are skipped with 
- * a console warning rather than throwing so that one bad zone doesn't stop the rest
- * 
- * @param {Object[]} components - Array of component config objects 
- * @returns {Array<Object>} Scheduler handles with intervalId and cancel properties
- */
-function scheduleAll(components) {
-    const handles = [];
- 
-    for (const component of components) {
-        if (typeof component.refresh !== 'number' || component.refresh <= 0) continue;
- 
-        const zoneElem = document.getElementById(component.zone);
-        if (!zoneElem) {
-            console.warn('Zone element with id ' + component.zone + ' not found for component of type ' + component.type);
-            continue;
-        }
-        handles.push(scheduleComponent(component, zoneElem));
-    }
-    return handles;
-}
-
-
-/**
- * Cancels all active scheduler handles rerturned by scheduleAll
- * Safe to call multiople rimes, already cancelled handles are no ops
+ * Cancels all active scheduler handles returned by bootstrap
+ * Safe to call multiple times; already-cancelled handles are no-ops
  * @param {Array<{ cancel: Function }>} handles
  */
 function cancelAll(handles) {
@@ -364,25 +339,21 @@ function cancelAll(handles) {
 /* istanbul ignore next */
 async function bootstrap() {
     try {
-        const validZones = Array.from(document.querySelectorAll('.zone')).map(el => el.id);
-        const config = await loadConfig(validZones);
+        const zoneElems = new Map(Array.from(document.querySelectorAll('.zone')).map(el => [el.id, el]));
+        const config = await loadConfig(Array.from(zoneElems.keys()));
         document.documentElement.style.setProperty('--color-bg', config.theme?.background ?? '#111111');
         document.documentElement.style.setProperty('--color-text', config.theme?.color ?? '#ffffff');
         document.documentElement.style.setProperty('--font-family', config.theme?.fontFamily ?? 'sans-serif');
         registerComponents();
- 
-        // Initial render of all components
+
         for (const [i, component] of config.components.entries()) {
-            const zoneElem = document.getElementById(component.zone);
-            if (!zoneElem) {
-                console.warn('Zone element with id ' + component.zone + ' not found for component of type ' + component.type);
-                continue;
+            const id = `component-${i}`;
+            const zoneElem = zoneElems.get(component.zone);
+            renderComponent(component, zoneElem, id);
+            if (component.refresh) {
+                scheduleComponent(component, zoneElem, id);
             }
-            renderComponent(component, zoneElem, `component-${i}`);
         }
- 
-        // Hand off components that need periodic refresh to the scheduler
-        scheduleAll(config.components);
     }
     catch (error) {
         console.error("Error during bootstrap:", error);
@@ -406,7 +377,6 @@ export { loadConfig,
     bootstrap,
     buildClock,
     scheduleComponent,
-    scheduleAll,
     cancelAll,
     renderComponent,
 };
