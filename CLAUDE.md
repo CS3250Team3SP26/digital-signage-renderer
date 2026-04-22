@@ -54,7 +54,10 @@ digital-signage-renderer/
     ├── renderer.js      # All application logic (see internal sections below)
     ├── config.json      # Layout, component definitions, refresh intervals, content sources
     └── test/
-        └── renderer.test.js   # Jest unit tests targeting pure functions in renderer.js
+        ├── configLoader.test.js   # Tests for loadConfig and validation functions
+        ├── registry.test.js       # Tests for registerComponent and getComponent
+        ├── builders.test.js       # Tests for buildImage, buildClock, etc.
+        └── scheduler.test.js      # Tests for renderComponent, scheduleComponent, cancelAll
 ```
 
 > `test/` and tooling config files (`package.json`, `eslint.config.js`, etc.) are support files, not part of the four-file deliverable.
@@ -67,9 +70,9 @@ digital-signage-renderer/
 |---|---|
 | **Config Loader** | `fetch`es and validates `config.json`; rejects on missing required fields |
 | **Component Registry** | A `Map` of `type → builderFunction`; adding a new component = registering one function |
-| **Component Builders** | One pure function per type (buildClock, buildRSS, buildImage, buildText, buildWeather). Signature: build[Type](component, id) — takes the component config object and a unique string ID. Returns a div.component-card with data-component-id set to id as the root element. The card div wraps all inner content elements and is responsible for card styling. This consistent root structure allows the Scheduler to locate and replace any component type via [data-component-id] without knowing the component's internal structure. These are the unit-testable surface. |
-| **Scheduler** | Handles per-component refresh intervals using `setInterval`; respects the `refresh` field in config |
-| **Bootstrap** | Entry point — wires everything together on `DOMContentLoaded`. Iterates config components, calls registry, injects into zones, starts scheduler. |
+| **Component Builders** | One pure function per type (buildClock, buildRSS, buildImage, buildText, buildWeather). Signature: build[Type](component, id) — takes the component config object and a unique string ID. Returns a div.component-card with data-component-id set to id as the root element. The card div wraps all inner content elements and is responsible for card styling. These are the unit-testable surface. |
+| **Scheduler** | Three functions: `renderComponent(component, zoneElem, id)` clears and redraws a single component; `scheduleComponent(component, zoneElem, id)` sets up a `setInterval` for components with a positive `refresh` value and returns a cancellable handle; `cancelAll(handles)` stops all active intervals. Bootstrap owns the initial render — `scheduleComponent` only sets up the repeat. |
+| **Bootstrap** | Entry point — wires everything together on `DOMContentLoaded`. Queries all `.zone` elements into a Map (one DOM lookup, reused throughout), loads and validates config, registers components, then iterates: renders each component immediately, and hands off to `scheduleComponent` for any that have a `refresh` interval. |
 
 ---
 
@@ -121,13 +124,16 @@ digital-signage-renderer/
 
 ```
 DOMContentLoaded
-  └── Config Loader (fetch + validate config.json)
-        └── for each component in config.components (with index i):
-              ├── Generate ID: `component-${i}`
-              ├── Registry lookup (type → builder)
-              ├── Builder (component, id → DOM element with data-component-id stamped)
-              ├── Inject into zone (document.getElementById(component.zone))
-              └── Scheduler (if component.refresh → setInterval)
+  └── Query all .zone elements → Map<id, element>  (one DOM lookup, reused throughout)
+        └── Config Loader (fetch + validate config.json, passing zone ids for validation)
+              └── Apply theme CSS custom properties
+                    └── registerComponents()
+                          └── for each component in config.components (with index i):
+                                ├── id = `component-${i}`
+                                ├── zoneElem = zoneElems.get(component.zone)
+                                ├── renderComponent(component, zoneElem, id)   ← initial render
+                                └── if component.refresh:
+                                      scheduleComponent(component, zoneElem, id)  ← interval only
 ```
 
 ---
@@ -211,8 +217,7 @@ To add a new component type (e.g., `weather`):
 4. Write unit tests for `buildWeather` before or alongside implementation (TDD)
 5. JSDoc the function
 
-The `id` parameter exists so the Scheduler can locate and replace the element
-on refresh without touching neighboring components in the same zone.
+The `id` parameter is stamped as `data-component-id` on the root card div, making each rendered element uniquely identifiable in the DOM. On refresh, `renderComponent` clears and replaces only the target zone's content using the same id, so the component identity is preserved across re-renders.
 No other existing code needs to change. That's the point of the registry pattern.
 
 ---
