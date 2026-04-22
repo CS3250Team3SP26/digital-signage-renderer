@@ -123,7 +123,7 @@ const registry = new Map();
  */
 const REQUIRED_COMPONENT_FIELDS = {
     image: ['src', 'alt'],
-    clock: [], // no required fields for clock, mode is optional
+    clock: [],
     rss: ['url'],
     weather: ['url'],
 };
@@ -273,11 +273,11 @@ function buildWeather(data, id) {
 }
 /**
  * Builds a clock component element based on the provided component configuration
- * If the mode is "analog", returns a canvas element with an analog clock drawn on it.
+ * If the mode is "analog", returns a svg element of an analog clock.
  * Otherwise, returns a div element displaying the current time as text.
  * @param {Object} component - The component configuration object containing the mode field
  * @param {string} id - The unique identifier to set as the data-component-id attribute
- * @returns {HTMLElement} The constructed clock element, either a canvas or a div
+ * @returns {HTMLElement} The constructed clock element, either a svg or a div
  */
 function buildClock(component, id) {
     const card = document.createElement('div');
@@ -307,7 +307,10 @@ function buildClock(component, id) {
     return card;
 }
 
-
+/**
+ * Draws an analog clock as an SVG element
+ * @returns {HTMLElement} The constructed SVG element representing the analog clock
+ */
 /* istanbul ignore next */
 function drawAnalogClock() {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
