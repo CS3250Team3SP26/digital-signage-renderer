@@ -5,7 +5,7 @@
 // ============================================================
 /**
  * Loads the configuration from config.json and validates it against required fields and valid zones
- * @param {Array} validZones An array of valid zone identifiers to validate against
+ * @param {Array} ValidZones An array of valid zone identifiers to validate against
  * @returns {Promise<Object>} The loaded configuration object
  * @throws {Error} If there is an error fetching the config.json file
  * @throws {Error} If there is an error parsing the json file
@@ -165,8 +165,7 @@ function registerComponents() {
  * Retrieves the builder function for a given component type from the registry
  * @param {String} type The component type to retrieve
  * @returns {Function} The builder function for the specified component type
- * @throws {TypeError} If the type is not a string
- * @throws {Error} If no builder is registered for the given type
+ * @throws {TypeError} If the type is not a string or the builder function is not found
  */
 function getComponent(type) {
     if (typeof type !== 'string') {
@@ -189,7 +188,7 @@ function getComponent(type) {
  * Builds an image component element based on the provided component configuration
  * @param {Object} component - The component configuration object containing src and alt fields
  * @param {string} id - The unique identifier to set as the data-component-id attribute
- * @returns {HTMLElement} A div.component-card with data-component-id set, containing an img element
+ * @returns {HTMLElement} The constructed img element
  */
 function buildImage(component, id){
     const card = document.createElement('div');
@@ -274,11 +273,11 @@ function buildWeather(data, id) {
 }
 /**
  * Builds a clock component element based on the provided component configuration
- * If the mode is "analog", the card contains a canvas with an analog clock drawn on it.
- * Otherwise, the card contains a div displaying the current time as text.
+ * If the mode is "analog", returns a svg element of an analog clock.
+ * Otherwise, returns a div element displaying the current time as text.
  * @param {Object} component - The component configuration object containing the mode field
  * @param {string} id - The unique identifier to set as the data-component-id attribute
- * @returns {HTMLElement} A div.component-card with data-component-id set, containing the clock element
+ * @returns {HTMLElement} The constructed clock element, either a svg or a div
  */
 function buildClock(component, id) {
     const card = document.createElement('div');
@@ -400,56 +399,6 @@ function drawAnalogClock() {
 // ============================================================
 /* istanbul ignore next */
 
-/**
- * Renders a single component into the target zone
- * Clears the zone's existing content, builds the DOM element, and appends it
- * @param {Object} component The component configuration object to render
- * @param {HTMLElement} zoneElem The target zone DOM element
- * @param {string} id The unique identifier passed to the builder as data-component-id
- */
-function renderComponent(component, zoneElem, id) {
-    const builder = getComponent(component.type);
-    const element = builder(component, id);
-    zoneElem.innerHTML = '';
-    zoneElem.appendChild(element);
-}
-
-/**
- * Sets up a periodic refresh interval for a component that has already been rendered by bootstrap
- * If component.refresh is a positive number, a repeating interval re-renders the component at that cadence
- * If refresh is absent, zero, negative, or non-numeric, no interval is created
- * Returns a cleanup handle so callers can cancel the interval later
- *
- * @param {Object} component The component config object
- * @param {HTMLElement} zoneElem The target zone DOM element
- * @param {string} id The unique identifier passed to renderComponent on each tick
- * @returns {{ intervalId: number|null, cancel: Function }} Handle with intervalId (null if no interval) and a cancel function
- */
-function scheduleComponent(component, zoneElem, id) {
-    if (typeof component.refresh !== 'number' || component.refresh <= 0) {
-        return { intervalId: null, cancel() {} };
-    }
-    const intervalId = setInterval(() => {
-        renderComponent(component, zoneElem, id);
-    }, component.refresh);
-    return {
-        intervalId,
-        cancel() {
-            clearInterval(intervalId);
-        }
-    };
-}
-
-/**
- * Cancels all active scheduler handles returned by bootstrap
- * Safe to call multiple times; already-cancelled handles are no-ops
- * @param {Array<{ cancel: Function }>} handles
- */
-function cancelAll(handles) {
-    for (const handle of handles) {
-        handle.cancel();
-    }
-}
 
 
 // ============================================================
@@ -466,20 +415,19 @@ function cancelAll(handles) {
 /* istanbul ignore next */
 async function bootstrap() {
     try {
-        const zoneElems = new Map(Array.from(document.querySelectorAll('.zone')).map(el => [el.id, el]));
-        const config = await loadConfig(Array.from(zoneElems.keys()));
+        const validZones = Array.from(document.querySelectorAll('.zone')).map(el => el.id);
+        const config = await loadConfig(validZones);
         document.documentElement.style.setProperty('--color-bg', config.theme?.background ?? '#111111');
         document.documentElement.style.setProperty('--color-text', config.theme?.color ?? '#ffffff');
         document.documentElement.style.setProperty('--color-secondary', config.theme?.secondaryColor ?? '#888888');
         document.documentElement.style.setProperty('--font-family', config.theme?.fontFamily ?? 'sans-serif');
         registerComponents();
-
         for (const [i, component] of config.components.entries()) {
-            const id = `component-${i}`;
-            const zoneElem = zoneElems.get(component.zone);
-            renderComponent(component, zoneElem, id);
+            const builder = getComponent(component.type);
+            const element = await builder(component, `component-${i}`);
+            document.getElementById(component.zone).appendChild(element);
             if (component.refresh) {
-                scheduleComponent(component, zoneElem, id);
+                // Call the scheduler to set up refresh intervals for this component
             }
         }
     }
@@ -491,7 +439,7 @@ async function bootstrap() {
         document.body.appendChild(errorElement);
     }
 }
- 
+
 document.addEventListener('DOMContentLoaded', bootstrap);
 
 export { loadConfig, 
@@ -504,9 +452,6 @@ export { loadConfig,
     buildImage,
     bootstrap,
     buildClock,
-    scheduleComponent,
-    cancelAll,
-    renderComponent,
     buildWeather,
     fetchWeatherData,
 };
