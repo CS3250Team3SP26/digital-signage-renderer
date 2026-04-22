@@ -1,0 +1,169 @@
+/* ============================================================
+   RESET
+   Normalize browser defaults for consistent cross-browser rendering
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* Prevent scrollbars on a fixed signage display */
+  font-size: 1.5vw; /* Base font scaled to viewport width for distance readability */
+}
+
+/* ============================================================
+   ROOT LAYOUT
+   CSS Grid container — defines zone positions and gutters
+   Theme background set here; zone cards use a lighter variant
+   ============================================================ */
+#display-root {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  grid-template-columns: 1fr 4fr;
+  grid-template-rows: 1fr 5fr 1fr;
+  grid-template-areas:
+    "header  header"
+    "sidebar main"
+    "footer  footer";
+  gap: 0.5em;
+  padding: 0.5em;
+  background-color: var(--color-bg, #111111);
+}
+
+/* ============================================================
+   ZONE PLACEMENT
+   Assigns each zone element to its named grid area
+   ============================================================ */
+#header  { grid-area: header; }
+#sidebar { grid-area: sidebar; }
+#main    { grid-area: main; }
+#footer  { grid-area: footer; }
+
+/* ============================================================
+   ZONE BASE
+   Zones are invisible layout containers — no background or border
+   Visual card treatment lives on .component-card, not the zone
+   ============================================================ */
+.zone {
+  color: var(--color-text, #ffffff);
+  font-family: var(--font-family, sans-serif);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+/* Header and footer stack children horizontally */
+#header, #footer {
+  flex-direction: row;
+}
+
+/* ============================================================
+   COMPONENT CARD
+   Visual card surface for every component type
+   flex: 1 ensures equal space sharing between sibling cards
+   min-height: 0 allows flex children to shrink below natural size
+   ============================================================ */
+.component-card {
+  background-color: color-mix(in srgb, var(--color-bg, #111111) 97%, white); /* Slightly lighter than root background */
+  display: flex;
+  border-radius: 0.4em;
+  padding: 0.5em;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================================
+   COMPONENT-SPECIFIC STYLES
+   ============================================================ */
+
+  /* ============================================================
+    IMAGE COMPONENT
+    ============================================================ */
+    .component-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      min-height: 0;
+      flex: 1;
+    }
+
+  /* ============================================================
+    WEATHER COMPONENT
+    ============================================================ */
+    .component-card:has(.weather-temp) {
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 0.2em;
+    }
+    
+    .weather-city {
+      font-size: 0.6em;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-secondary, #888888);
+    }
+    
+    .weather-temp {
+      font-size: 3.5em;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    
+    .weather-condition {
+      font-size: 1em;
+      color: var(--color-secondary, #888888);
+      margin-bottom: 0.5em;
+    }
+    
+    .weather-humidity,
+    .weather-wind,
+    .weather-feels-like {
+      font-size: 0.85em;
+      color: var(--color-secondary, #888888);
+      display: flex;
+      gap: 1em;
+    }
+
+    .weather-humidity span:first-child,
+    .weather-wind span:first-child,
+    .weather-feels-like span:first-child {
+      width: 5em;
+    }
+
+    .weather-humidity span:last-child,
+    .weather-wind span:last-child,
+    .weather-feels-like span:last-child {
+      width: 5em;
+      text-align: right;
+    }
+
+  /* ============================================================
+    CLOCK COMPONENT
+    ============================================================ */
+    .clock-card {
+      flex-direction: column;
+      justify-content: center; /* centers content vertically in the card */
+    }
+    
+    .clock-card svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .clock-time {
+      font-size: 2em;
+      font-weight: bold;
+    }
+
+    .clock-date {
+      font-size: 1.2em;
+      color: var(--color-secondary, #888888);
+    }

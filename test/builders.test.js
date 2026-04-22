@@ -1,23 +1,114 @@
-import { describe, it, expect } from '@jest/globals';
-import { buildImage } from '../src/renderer.js';
+import { jest, describe, it, expect } from '@jest/globals';
+import { buildImage, buildClock , buildWeather,fetchWeatherData} from '../src/renderer.js';
+
 
 describe('buildImage', () => {
 
-    it('should set the src attribute', () => {
+    it('should return a component-card wrapper div', () => {
         const component = { src: './assets/logo.png', alt: 'A logo' };
-        const result = buildImage(component);
-        expect(result.getAttribute('src')).toBe('./assets/logo.png');
+        const result = buildImage(component, 'component-0');
+        expect(result.tagName).toBe('DIV');
+        expect(result.classList.contains('component-card')).toBe(true);
     });
 
-    it('should set the alt attribute', () => {
+    it('should stamp data-component-id on the card', () => {
         const component = { src: './assets/logo.png', alt: 'A logo' };
-        const result = buildImage(component);
-        expect(result.getAttribute('alt')).toBe('A logo');
+        const result = buildImage(component, 'component-0');
+        expect(result.dataset.componentId).toBe('component-0');
     });
 
-    it('should create an img element', () => {
+    it('should contain an img element inside the card', () => {
         const component = { src: './assets/logo.png', alt: 'A logo' };
-        const result = buildImage(component);
-        expect(result.tagName).toBe('IMG');
+        const result = buildImage(component, 'component-0');
+        expect(result.querySelector('img')).not.toBeNull();
+    });
+
+    it('should set the src attribute on the img', () => {
+        const component = { src: './assets/logo.png', alt: 'A logo' };
+        const result = buildImage(component, 'component-0');
+        expect(result.querySelector('img').getAttribute('src')).toBe('./assets/logo.png');
+    });
+
+    it('should set the alt attribute on the img', () => {
+        const component = { src: './assets/logo.png', alt: 'A logo' };
+        const result = buildImage(component, 'component-0');
+        expect(result.querySelector('img').getAttribute('alt')).toBe('A logo');
+    });
+
+});
+
+describe('buildClock', () => {
+
+    it('should return a component-card wrapper div', () => {
+        const result = buildClock({}, 'component-0');
+        expect(result.tagName).toBe('DIV');
+        expect(result.classList.contains('component-card')).toBe(true);
+    });
+
+    it('should stamp data-component-id on the card', () => {
+        const result = buildClock({}, 'component-0');
+        expect(result.dataset.componentId).toBe('component-0');
+    });
+
+    it('should contain an inner div with the time text', () => {
+        const result = buildClock({}, 'component-0');
+        const inner = result.querySelector('div');
+        expect(inner).not.toBeNull();
+        expect(inner.textContent).toBeTruthy();
+    });
+
+    it('should contain an svg element when mode is analog', () => {
+        const result = buildClock({ mode: 'analog' }, 'component-0');
+        expect(result.querySelector('svg')).not.toBeNull();
+    });
+
+});
+describe('buildWeather', () => {
+    const fakeData = { current: { temperature_2m: 72, weathercode: 0 } };
+
+    it('should return a component-card wrapper div', () => {
+        const result = buildWeather(fakeData, 'component-5');
+        expect(result.tagName).toBe('DIV');
+        expect(result.classList.contains('component-card')).toBe(true);
+    });
+
+    it('should stamp data-component-id on the card', () => {
+        const result = buildWeather(fakeData, 'component-5');
+        expect(result.dataset.componentId).toBe('component-5');
+    });
+
+    it('should display the city name', () => {
+        const result = buildWeather(fakeData, 'component-5');
+        expect(result.querySelector('.weather-city').textContent).toBe('Denver');
+    });
+
+    it('should display the temperature', () => {
+        const result = buildWeather(fakeData, 'component-5');
+        expect(result.querySelector('.weather-temp').textContent).toBe('72°');
+    });
+
+    it('should display the condition', () => {
+        const result = buildWeather(fakeData, 'component-5');
+        expect(result.querySelector('.weather-condition').textContent).toBe('Clear sky');
+    });
+});
+
+describe('fetchWeatherData', () => {
+    it('should return parsed JSON from the URL', async () => {
+        const fakeData = { city: 'Denver', temperature: 72, condition: 'Sunny' };
+        globalThis.fetch = jest.fn().mockResolvedValue({
+            ok: true,
+            json: async () => fakeData,
+        });
+
+        const result = await fetchWeatherData('https://fake.weather/api');
+        expect(result).toEqual(fakeData);
+    });
+
+    it('should throw if the response is not ok', async () => {
+        globalThis.fetch = jest.fn().mockResolvedValue({ ok: false, status: 404 });
+
+        await expect(fetchWeatherData('https://fake.weather/api'))
+            .rejects.toThrow('Weather fetch failed: 404');
     });
 });

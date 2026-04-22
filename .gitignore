@@ -3,3 +3,9 @@ node_modules/
 
 # Coverage reports
 coverage/
+
+# Assets
+assets/
+
+# AI
+.claude/
