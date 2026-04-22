@@ -312,6 +312,9 @@ function buildClock(component, id) {
  * @returns {HTMLElement} The constructed SVG element representing the analog clock
  */
 /* istanbul ignore next */
+// Hand update refactor planned — see updater branch
+// drawAnalogClock will be split into drawClockFace/drawClockHands
+// with date parameter for testability at that point
 function drawAnalogClock() {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 100 100');
