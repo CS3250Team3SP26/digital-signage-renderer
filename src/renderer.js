@@ -5,7 +5,7 @@
 // ============================================================
 /**
  * Loads the configuration from config.json and validates it against required fields and valid zones
- * @param {Array} ValidZones An array of valid zone identifiers to validate against
+ * @param {Array} validZones An array of valid zone identifiers to validate against
  * @returns {Promise<Object>} The loaded configuration object
  * @throws {Error} If there is an error fetching the config.json file
  * @throws {Error} If there is an error parsing the json file
@@ -161,7 +161,8 @@ function registerComponent(type, buildType) {
  * Retrieves the builder function for a given component type from the registry
  * @param {String} type The component type to retrieve
  * @returns {Function} The builder function for the specified component type
- * @throws {TypeError} If the type is not a string or the builder function is not found
+ * @throws {TypeError} If the type is not a string
+ * @throws {Error} If no builder is registered for the given type
  */
 function getComponent(type) {
     if (typeof type !== 'string') {
@@ -184,7 +185,7 @@ function getComponent(type) {
  * Builds an image component element based on the provided component configuration
  * @param {Object} component - The component configuration object containing src and alt fields
  * @param {string} id - The unique identifier to set as the data-component-id attribute
- * @returns {HTMLElement} The constructed img element
+ * @returns {HTMLElement} A div.component-card with data-component-id set, containing an img element
  */
 function buildImage(component, id){
     const card = document.createElement('div');
@@ -200,11 +201,11 @@ function buildImage(component, id){
 }
 /**
  * Builds a clock component element based on the provided component configuration
- * If the mode is "analog", returns a canvas element with an analog clock drawn on it.
- * Otherwise, returns a div element displaying the current time as text.
+ * If the mode is "analog", the card contains a canvas with an analog clock drawn on it.
+ * Otherwise, the card contains a div displaying the current time as text.
  * @param {Object} component - The component configuration object containing the mode field
  * @param {string} id - The unique identifier to set as the data-component-id attribute
- * @returns {HTMLElement} The constructed clock element, either a canvas or a div
+ * @returns {HTMLElement} A div.component-card with data-component-id set, containing the clock element
  */
 function buildClock(component, id) {
     const card = document.createElement('div');
@@ -273,10 +274,11 @@ function drawAnalogClock(canvas) {
 /* istanbul ignore next */
 
 /**
- * Rendes a single component into the target zone
- * Clears the zones exsisting content and bulds the DOm elemetn and appends it
+ * Renders a single component into the target zone
+ * Clears the zone's existing content, builds the DOM element, and appends it
  * @param {Object} component The component configuration object to render
- * @param {HTMLElement} zoneElem the targetzone DOM element
+ * @param {HTMLElement} zoneElem The target zone DOM element
+ * @param {string} id The unique identifier passed to the builder as data-component-id
  */
 function renderComponent(component, zoneElem, id) {
     const builder = getComponent(component.type);
@@ -286,17 +288,15 @@ function renderComponent(component, zoneElem, id) {
 }
 
 /**
- * Schedules a component to be rendered and an optional periodic refresh
- * 
- * - Renders the component immediately on call
- * - If the 'component.refresh' is a positive number, it sets up a repeating interval that re-renders the component at that cadence
- * - Returns a cleanup handle so callers can cancel the interval later 
- * 
+ * Sets up a periodic refresh interval for a component that has already been rendered by bootstrap
+ * If component.refresh is a positive number, a repeating interval re-renders the component at that cadence
+ * If refresh is absent, zero, negative, or non-numeric, no interval is created
+ * Returns a cleanup handle so callers can cancel the interval later
+ *
  * @param {Object} component The component config object
- * @param {HTMLElement} zoneElem the target zone DOM element
- * @returns {Object} An object with intervalId and cancel properties
- * @returns {(number|null)} intervalId - The value returned by setInterval, or null if no interval was created
- * @returns {Function} cancel - A zero-argument function that stops the interval
+ * @param {HTMLElement} zoneElem The target zone DOM element
+ * @param {string} id The unique identifier passed to renderComponent on each tick
+ * @returns {{ intervalId: number|null, cancel: Function }} Handle with intervalId (null if no interval) and a cancel function
  */
 function scheduleComponent(component, zoneElem, id) {
     if (typeof component.refresh !== 'number' || component.refresh <= 0) {
