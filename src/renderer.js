@@ -123,9 +123,11 @@ const registry = new Map();
  */
 const REQUIRED_COMPONENT_FIELDS = {
     image: ['src', 'alt'],
-    clock: [], // no required fields for clock, mode is optional
-    rss: ['url']
+    clock: [],
+    rss: ['url'],
+    weather: ['url'],
 };
+
 
 /**
  * Registers all component types with their corresponding builder functions
@@ -156,7 +158,6 @@ function registerComponent(type, buildType) {
     }
     registry.set(type, buildType);
 }
-
 /**
  * Retrieves the builder function for a given component type from the registry
  * @param {String} type The component type to retrieve
@@ -239,70 +240,191 @@ function buildRss(component, id) {
 }
 
 /**
- * Builds a clock component element based on the provided component configuration
- * If the mode is "analog", returns a canvas element with an analog clock drawn on it.
- * Otherwise, returns a div element displaying the current time as text.
- * @param {Object} component - The component configuration object containing the mode field
- * @param {string} id - The unique identifier to set as the data-component-id attribute
- * @returns {HTMLElement} The constructed clock element, either a canvas or a div
+ * Fetches weather data from the provided URL
+ * @param {string} url - The URL to fetch weather data from
+ * @returns {Promise<Object>} The weather data object
  */
-function buildClock(component, id) {
+async function fetchWeatherData(url) {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Weather fetch failed: ${response.status}`);
+    }
+    return response.json();
+}
+/**
+ * Builds a weather component element from weather data
+ * @param {Object} data - The weather data object (e.g. from an API response)
+ * @param {string} id - The unique identifier to set as data-component-id
+ * @returns {HTMLElement} The constructed weather card element
+ */
+function buildWeather(data, id) {
     const card = document.createElement('div');
     card.className = 'component-card';
     card.dataset.componentId = id;
 
+    const weatherDescriptions = {
+        0: "Clear sky",
+        1: "Mainly clear",
+        2: "Partly cloudy",
+        3: "Overcast",
+        45: "Foggy",
+        61: "Light rain",
+        63: "Moderate rain",
+        80: "Rain showers",
+        95: "Thunderstorm"
+    };
+
+    const city = document.createElement('div');
+    city.className = 'weather-city';
+    city.textContent = "Denver";
+
+    const temp = document.createElement('div');
+    temp.className = 'weather-temp';
+    temp.textContent = `${data.current.temperature_2m}°`;
+
+    const condition = document.createElement('div');
+    condition.className = 'weather-condition';
+    condition.textContent = weatherDescriptions[data.current.weathercode];
+
+    const humidity = document.createElement('div');
+    humidity.className = 'weather-humidity';
+    humidity.innerHTML = `<span>Humidity</span><span>${data.current.relative_humidity_2m}%</span>`;
+
+    const wind = document.createElement('div');
+    wind.className = 'weather-wind';
+    wind.innerHTML = `<span>Wind</span><span>${data.current.wind_speed_10m} mph</span>`;
+
+    const feelsLike = document.createElement('div');
+    feelsLike.className = 'weather-feels-like';
+    feelsLike.innerHTML = `<span>Feels like</span><span>${data.current.apparent_temperature}°F</span>`;
+
+    card.appendChild(city);
+    card.appendChild(temp);
+    card.appendChild(condition);
+    card.appendChild(humidity);
+    card.appendChild(wind);
+    card.appendChild(feelsLike);
+    return card;
+}
+
+/**
+ * Builds a clock component element based on the provided component configuration
+ * If the mode is "analog", returns a svg element of an analog clock.
+ * Otherwise, returns a div element displaying the current time as text.
+ * @param {Object} component - The component configuration object containing the mode field
+ * @param {string} id - The unique identifier to set as the data-component-id attribute
+ * @returns {HTMLElement} The constructed clock element, either a svg or a div
+ */
+function buildClock(component, id) {
+    const card = document.createElement('div');
+    card.className = 'component-card clock-card';
+    card.dataset.componentId = id;
+
     if (component.mode === "analog") {
-        const canvas = document.createElement('canvas')
-        drawAnalogClock(canvas);
-        card.appendChild(canvas);
+        const clock = drawAnalogClock();
+        card.appendChild(clock);
     } else {
-        const div = document.createElement('div');
-        div.textContent = new Date().toLocaleTimeString();
-        card.appendChild(div);
+        const time = document.createElement('div');
+        time.className = 'clock-time';
+        time.textContent = new Date().toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+
+        const date = document.createElement('div');
+        date.className = 'clock-date';
+        date.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+        card.appendChild(time);
+        card.appendChild(date);
     }
     return card;
 }
 
 /**
- * Draws an analog clock on the provided canvas element,
- * including a clock face, hour hand, and minute hand pointing to the current time
- * @param {HTMLCanvasElement} canvas - The canvas element to draw the clock on
- * @returns {void}
+ * Draws an analog clock as an SVG element
+ * @returns {HTMLElement} The constructed SVG element representing the analog clock
  */
 /* istanbul ignore next */
-function drawAnalogClock(canvas) {
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    let radius = canvas.height / 2;
-    ctx.translate(radius, radius);
-    ctx.beginPath();
-    ctx.arc(0, 0, radius, 0, 2 * Math.PI);
-    ctx.fillStyle = 'white';
-    ctx.fill();
-    const now = new Date();
+// Hand update refactor planned — see updater branch
+// drawAnalogClock will be split into drawClockFace/drawClockHands
+// with date parameter for testability at that point
+function drawAnalogClock() {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 100 100');
 
-    const hourAngle = ((now.getHours() % 12) / 12) * 2 * Math.PI;
+    // clock face
+    const face = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    face.setAttribute('cx', '50');   // center x
+    face.setAttribute('cy', '50');   // center y
+    face.setAttribute('r', '48');    // radius
+    face.setAttribute('fill', '#1a1a1a');
+    face.setAttribute('stroke', 'rgba(255,255,255,0.1)');
+    face.setAttribute('stroke-width', '0.5');
+    svg.appendChild(face);
 
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(
-    Math.sin(hourAngle) * radius * 0.5,
-    -Math.cos(hourAngle) * radius * 0.5
-);
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = 4;
-    ctx.stroke();
+    // hour ticks
+    for (let i = 0; i < 12; i++) {
+        const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        tick.setAttribute('x1', '50');
+        tick.setAttribute('y1', '5');   // outer edge
+        tick.setAttribute('x2', '50');
+        tick.setAttribute('y2', '10');  // inner edge — length of tick
+        tick.setAttribute('stroke', 'rgba(255,255,255,0.5)');
+        tick.setAttribute('stroke-width', '1');
+        tick.setAttribute('transform', `rotate(${i * 30}, 50, 50)`);
+        svg.appendChild(tick);
+    }
 
-    const minuteAngle = ((now.getMinutes() / 60)) * 2 * Math.PI;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(
-    Math.sin(minuteAngle) * radius * 0.7,
-    -Math.cos(minuteAngle) * radius * 0.7
-);
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = 4;
-    ctx.stroke();
+    const time = new Date();
+
+    // minute hand
+    const minuteHand = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    minuteHand.setAttribute('x1', '50');  // start x (center)
+    minuteHand.setAttribute('y1', '50');  // start y (center)
+    minuteHand.setAttribute('x2', '50');  // end x (pointing straight up)
+    minuteHand.setAttribute('y2', '10');  // end y (toward 12 o'clock)
+    minuteHand.setAttribute('stroke', 'white');
+    minuteHand.setAttribute('stroke-width', '1.5');
+    minuteHand.setAttribute('stroke-linecap', 'round'); // rounded tip
+    minuteHand.setAttribute('transform', `rotate(${time.getMinutes() * 6}, 50, 50)`); // Rotate based on minutes
+    svg.appendChild(minuteHand);
+
+    // hour hand
+    const hourHand = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    hourHand.setAttribute('x1', '50');  // start x (center)
+    hourHand.setAttribute('y1', '50');  // start y (center)
+    hourHand.setAttribute('x2', '50');  // end x (pointing straight up)
+    hourHand.setAttribute('y2', '10');  // end y (toward 12 o'clock)
+    hourHand.setAttribute('stroke', 'white');
+    hourHand.setAttribute('stroke-width', '1.5');
+    hourHand.setAttribute('stroke-linecap', 'round'); // rounded tip
+    hourHand.setAttribute('transform', `rotate(${(time.getHours() % 12) * 30 + time.getMinutes() / 2}, 50, 50)`); // Rotate based on hours and minutes
+    svg.appendChild(hourHand);
+
+    // second hand
+    const secondHand = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    secondHand.setAttribute('x1', '50');
+    secondHand.setAttribute('y1', '50');
+    secondHand.setAttribute('x2', '50');
+    secondHand.setAttribute('y2', '8');
+    secondHand.setAttribute('stroke', 'rgba(255, 255, 255, 0.26)');
+    secondHand.setAttribute('stroke-width', '1');
+    secondHand.setAttribute('stroke-linecap', 'round');
+    secondHand.setAttribute('transform', `rotate(${time.getSeconds() * 6}, 50, 50)`);
+    svg.appendChild(secondHand);
+
+    // center dot
+    const center = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    center.setAttribute('cx', '50');
+    center.setAttribute('cy', '50');
+    center.setAttribute('r', '1.5');
+    center.setAttribute('fill', 'white');
+    svg.appendChild(center);
+
+    return svg;
 }
 
 
@@ -313,6 +435,61 @@ function drawAnalogClock(canvas) {
 // ============================================================
 /* istanbul ignore next */
 
+/**
+ * Rendes a single component into the target zone
+ * Clears the zones exsisting content and bulds the DOm elemetn and appends it
+ * @param {Object} component The component configuration object to render
+ * @param {HTMLElement} zoneElem the targetzone DOM element
+ */
+async function renderComponent(component, zoneElem, id) {
+    const builder = getComponent(component.type);
+    const element = await builder(component, id);
+    const existing = zoneElem.querySelector(`[data-component-id="${id}"]`);
+    if (existing) {
+        existing.replaceWith(element);
+    } else {
+        zoneElem.appendChild(element);
+    }
+}
+
+/**
+ * Schedules a component to be rendered and an optional periodic refresh
+ * 
+ * - Renders the component immediately on call
+ * - If the 'component.refresh' is a positive number, it sets up a repeating interval that re-renders the component at that cadence
+ * - Returns a cleanup handle so callers can cancel the interval later 
+ * 
+ * @param {Object} component The component config object
+ * @param {HTMLElement} zoneElem the target zone DOM element
+ * @returns {Object} An object with intervalId and cancel properties
+ * @returns {(number|null)} intervalId - The value returned by setInterval, or null if no interval was created
+ * @returns {Function} cancel - A zero-argument function that stops the interval
+ */
+function scheduleComponent(component, zoneElem, id) {
+    if (typeof component.refresh !== 'number' || component.refresh <= 0) {
+        return { intervalId: null, cancel() {} };
+    }
+    const intervalId = setInterval(async () => {
+        await renderComponent(component, zoneElem, id);
+    }, component.refresh);
+    return {
+        intervalId,
+        cancel() {
+            clearInterval(intervalId);
+        }
+    };
+}
+
+/**
+ * Cancels all active scheduler handles returned by bootstrap
+ * Safe to call multiple times; already-cancelled handles are no-ops
+ * @param {Array<{ cancel: Function }>} handles
+ */
+function cancelAll(handles) {
+    for (const handle of handles) {
+        handle.cancel();
+    }
+}
 
 
 // ============================================================
@@ -329,18 +506,20 @@ function drawAnalogClock(canvas) {
 /* istanbul ignore next */
 async function bootstrap() {
     try {
-        const validZones = Array.from(document.querySelectorAll('.zone')).map(el => el.id);
-        const config = await loadConfig(validZones);
+        const zoneElems = new Map(Array.from(document.querySelectorAll('.zone')).map(el => [el.id, el]));
+        const config = await loadConfig(Array.from(zoneElems.keys()));
         document.documentElement.style.setProperty('--color-bg', config.theme?.background ?? '#111111');
         document.documentElement.style.setProperty('--color-text', config.theme?.color ?? '#ffffff');
+        document.documentElement.style.setProperty('--color-secondary', config.theme?.secondaryColor ?? '#888888');
         document.documentElement.style.setProperty('--font-family', config.theme?.fontFamily ?? 'sans-serif');
         registerComponents();
+
         for (const [i, component] of config.components.entries()) {
-            const builder = getComponent(component.type);
-            const element = await builder(component, `component-${i}`);
-            document.getElementById(component.zone).appendChild(element);
+            const id = `component-${i}`;
+            const zoneElem = zoneElems.get(component.zone);
+            await renderComponent(component, zoneElem, id);
             if (component.refresh) {
-                // Call the scheduler to set up refresh intervals for this component
+                scheduleComponent(component, zoneElem, id);
             }
         }
     }
@@ -355,4 +534,22 @@ async function bootstrap() {
 
 document.addEventListener('DOMContentLoaded', bootstrap);
 
-export { loadConfig, validateConfig, validateLayout, validateComponents, validateComponent, registerComponent, getComponent, buildImage, bootstrap, buildClock, buildRss, parseRssFeed };
+export {
+    loadConfig,
+    validateConfig,
+    validateLayout,
+    validateComponents,
+    validateComponent,
+    registerComponent,
+    getComponent,
+    buildImage,
+    bootstrap,
+    buildClock,
+    scheduleComponent,
+    cancelAll,
+    renderComponent,
+    buildWeather,
+    fetchWeatherData,
+    buildRss,
+    parseRssFeed,
+};
