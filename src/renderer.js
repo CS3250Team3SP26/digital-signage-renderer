@@ -138,9 +138,13 @@ const REQUIRED_COMPONENT_FIELDS = {
 function registerComponents() {
     // To register a new component add it below
     // ex. registerComponent('type', buildType)
-    registerComponent('rss', buildRss);
     registerComponent('image', buildImage);
     registerComponent('clock', buildClock);
+    registerComponent('rss', buildRss);
+    registerComponent('weather', async (component, id) => { 
+        const data = await fetchWeatherData(component.url);
+        return buildWeather(data, id);
+    });
 }
 
 /**
@@ -245,7 +249,6 @@ async function buildRss(component, id) {
 
     return card;
 }
-
 /**
  * Fetches weather data from the provided URL
  * @param {string} url - The URL to fetch weather data from
