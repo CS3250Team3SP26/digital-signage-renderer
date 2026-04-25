@@ -220,20 +220,26 @@ function parseRssFeed(xmlString) {
  * @returns {HTMLElement} The constructed card div (fetch populates it asynchronously)
  */
 /* istanbul ignore next */
-function buildRss(component, id) {
+async function buildRss(component, id) {
     const card = document.createElement('div');
     card.className = 'component-card';
     card.dataset.componentId = id;
 
-    fetch(component.url)
+    const url = (component.proxy ?? '') + component.url;
+
+    await fetch(url)
         .then(response => response.text())
         .then(text => {
-            const titles = parseRssFeed(text);
-            titles.forEach(title => {
+            parseRssFeed(text).forEach(title => {
                 const p = document.createElement('p');
                 p.textContent = title;
                 card.appendChild(p);
             });
+        })
+        .catch(() => {
+            const err = document.createElement('p');
+            err.textContent = 'Failed to load feed';
+            card.appendChild(err);
         });
 
     return card;
@@ -517,9 +523,10 @@ async function bootstrap() {
         for (const [i, component] of config.components.entries()) {
             const id = `component-${i}`;
             const zoneElem = zoneElems.get(component.zone);
-            await renderComponent(component, zoneElem, id);
+            const enriched = { ...component, proxy: config.proxy };
+            await renderComponent(enriched, zoneElem, id);
             if (component.refresh) {
-                scheduleComponent(component, zoneElem, id);
+                scheduleComponent(enriched, zoneElem, id);
             }
         }
     }

@@ -1,5 +1,5 @@
 import { jest, describe, it, expect } from '@jest/globals';
-import { buildImage, buildClock , buildWeather,fetchWeatherData} from '../src/renderer.js';
+import { buildImage, buildClock, buildWeather, fetchWeatherData, parseRssFeed } from '../src/renderer.js';
 
 
 describe('buildImage', () => {
@@ -110,5 +110,32 @@ describe('fetchWeatherData', () => {
 
         await expect(fetchWeatherData('https://fake.weather/api'))
             .rejects.toThrow('Weather fetch failed: 404');
+    });
+});
+
+describe('parseRssFeed', () => {
+
+    it('should return the second title at index 0', () => {
+        const xml = `<rss><channel>
+        <item><title>First headline</title></item>
+        <item><title>Second headline</title></item>
+        </channel></rss>`;
+        const result = parseRssFeed(xml);
+        expect(result[0]).toBe('First headline');
+    });
+
+    it('should return the second title at index 1', () => {
+        const xml = `<rss><channel>
+        <item><title>First headline</title></item>
+        <item><title>Second headline</title></item>
+        </channel></rss>`;
+        const result = parseRssFeed(xml);
+        expect(result[1]).toBe('Second headline');
+    });
+
+    it('should return an array of length 0 if array is empty', () => {
+        const xml = ``;
+        const result = parseRssFeed(xml);
+        expect(result.length).toBe(0);
     });
 });
