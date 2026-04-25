@@ -231,9 +231,10 @@ async function buildRss(component, id) {
         .then(response => response.text())
         .then(text => {
             parseRssFeed(text).forEach(title => {
-                const p = document.createElement('p');
-                p.textContent = title;
-                card.appendChild(p);
+                const item = document.createElement('div');
+                item.className = 'rss-item';
+                item.textContent = title;
+                card.appendChild(item);
             });
         })
         .catch(() => {
