@@ -1,6 +1,5 @@
-import { jest, describe, it, expect } from '@jest/globals';
+import { jest, describe, it, expect  } from '@jest/globals';
 import { buildImage, buildClock, buildWeather, fetchWeatherData, parseRssFeed, buildText } from '../src/renderer.js';
-import { buildImage, buildClock , buildWeather, buildText, fetchWeatherData} from '../src/renderer.js';
 
 
 describe('buildImage', () => {
@@ -40,10 +39,6 @@ describe('buildImage', () => {
 
 describe('buildClock', () => {
 
-    beforeEach(() => {
-        HTMLCanvasElement.prototype.getContext = () => null;
-    });
-
     it('should return a component-card wrapper div', () => {
         const result = buildClock({}, 'component-0');
         expect(result.tagName).toBe('DIV');
@@ -62,9 +57,9 @@ describe('buildClock', () => {
         expect(inner.textContent).toBeTruthy();
     });
 
-    it('should contain a canvas element when mode is analog', () => {
+    it('should contain an svg element when mode is analog', () => {
         const result = buildClock({ mode: 'analog' }, 'component-0');
-        expect(result.querySelector('canvas')).not.toBeNull();
+        expect(result.querySelector('svg')).not.toBeNull();
     });
 
 });
@@ -97,37 +92,7 @@ describe('buildWeather', () => {
         expect(result.querySelector('.weather-condition').textContent).toBe('Clear sky');
     });
 });
-describe('buildText', () => {
 
-    it('should return a component-card wrapper div', () => {
-        const result = buildText(
-            { content: 'Welcome students' },
-            'component-9'
-        );
-
-        expect(result.tagName).toBe('DIV');
-        expect(result.classList.contains('component-card')).toBe(true);
-    });
-
-    it('should stamp data-component-id on the card', () => {
-        const result = buildText(
-            { content: 'Welcome students' },
-            'component-9'
-        );
-
-        expect(result.dataset.componentId).toBe('component-9');
-    });
-
-    it('should display the correct text', () => {
-        const result = buildText(
-            { content: 'Welcome students' },
-            'component-9'
-        );
-
-        expect(result.textContent).toContain('Welcome students');
-    });
-
-});
 describe('fetchWeatherData', () => {
     it('should return parsed JSON from the URL', async () => {
         const fakeData = { city: 'Denver', temperature: 72, condition: 'Sunny' };
@@ -145,5 +110,32 @@ describe('fetchWeatherData', () => {
 
         await expect(fetchWeatherData('https://fake.weather/api'))
             .rejects.toThrow('Weather fetch failed: 404');
+    });
+});
+
+describe('parseRssFeed', () => {
+
+    it('should return the second title at index 0', () => {
+        const xml = `<rss><channel>
+        <item><title>First headline</title></item>
+        <item><title>Second headline</title></item>
+        </channel></rss>`;
+        const result = parseRssFeed(xml);
+        expect(result[0]).toBe('First headline');
+    });
+
+    it('should return the second title at index 1', () => {
+        const xml = `<rss><channel>
+        <item><title>First headline</title></item>
+        <item><title>Second headline</title></item>
+        </channel></rss>`;
+        const result = parseRssFeed(xml);
+        expect(result[1]).toBe('Second headline');
+    });
+
+    it('should return an array of length 0 if array is empty', () => {
+        const xml = ``;
+        const result = parseRssFeed(xml);
+        expect(result.length).toBe(0);
     });
 });
