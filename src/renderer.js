@@ -59,7 +59,7 @@ function validateLayout(layout, validZones) {
         if (invalidZones.length > 0) {
             errors.push(`Invalid zones: ${invalidZones.join(', ')}`);
         }
-    } 
+    }
     return errors;
 }
 
@@ -134,7 +134,18 @@ const REQUIRED_COMPONENT_FIELDS = {
  * This function should be called during the bootstrap phase to ensure all components are available for rendering
  * To add a new component type, simply call registerComponent with the type string and the builder function that creates the DOM element for that component
  */
-
+/* istanbul ignore next */
+function registerComponents() {
+    // To register a new component add it below
+    // ex. registerComponent('type', buildType)
+    registerComponent('image', buildImage);
+    registerComponent('clock', buildClock);
+    registerComponent('rss', buildRss);
+    registerComponent('weather', async (component, id) => { 
+        const data = await fetchWeatherData(component.url);
+        return buildWeather(data, id);
+    });
+}
 
 /**
  * Registers a component type with its corresponding builder function
@@ -151,16 +162,6 @@ function registerComponent(type, buildType) {
     }
     registry.set(type, buildType);
 }
-/* istanbul ignore next */
-function registerComponents() {
-    registerComponent('image', buildImage);
-    registerComponent('clock', buildClock);
-    registerComponent('weather', async (component, id) => { 
-        const data = await fetchWeatherData(component.url);
-        return buildWeather(data, id);
-    });
-}
-
 /**
  * Retrieves the builder function for a given component type from the registry
  * @param {String} type The component type to retrieve
@@ -200,6 +201,52 @@ function buildImage(component, id){
     img.setAttribute('alt', component.alt);
 
     card.appendChild(img);
+    return card;
+}
+
+/**
+ * Parses an RSS XML string and returns an array of item titles
+ * @param {string} xmlString - The raw XML string from an RSS feed
+ * @returns {string[]} An array of title strings extracted from each <item> element
+ */
+function parseRssFeed(xmlString) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlString, 'text/xml');
+    const items = doc.querySelectorAll('item');
+    const titles = Array.from(items).map(item => item.querySelector('title').textContent);
+    return titles;
+}
+
+/**
+ * Builds an RSS component element that fetches and displays feed item titles
+ * @param {Object} component - The component configuration object containing a url field
+ * @param {string} id - The unique identifier to set as the data-component-id attribute
+ * @returns {HTMLElement} The constructed card div (fetch populates it asynchronously)
+ */
+/* istanbul ignore next */
+async function buildRss(component, id) {
+    const card = document.createElement('div');
+    card.className = 'component-card';
+    card.dataset.componentId = id;
+
+    const url = (component.proxy ?? '') + component.url;
+
+    await fetch(url)
+        .then(response => response.text())
+        .then(text => {
+            parseRssFeed(text).forEach(title => {
+                const item = document.createElement('div');
+                item.className = 'rss-item';
+                item.textContent = title;
+                card.appendChild(item);
+            });
+        })
+        .catch(() => {
+            const err = document.createElement('p');
+            err.textContent = 'Failed to load feed';
+            card.appendChild(err);
+        });
+
     return card;
 }
 /**
@@ -260,17 +307,16 @@ function buildWeather(data, id) {
     const feelsLike = document.createElement('div');
     feelsLike.className = 'weather-feels-like';
     feelsLike.innerHTML = `<span>Feels like</span><span>${data.current.apparent_temperature}°F</span>`;
-    
+
     card.appendChild(city);
     card.appendChild(temp);
     card.appendChild(condition);
     card.appendChild(humidity);
     card.appendChild(wind);
     card.appendChild(feelsLike);
-
-
     return card;
 }
+
 /**
  * Builds a clock component element based on the provided component configuration
  * If the mode is "analog", returns a svg element of an analog clock.
@@ -481,9 +527,10 @@ async function bootstrap() {
         for (const [i, component] of config.components.entries()) {
             const id = `component-${i}`;
             const zoneElem = zoneElems.get(component.zone);
-            await renderComponent(component, zoneElem, id);
+            const enriched = { ...component, proxy: config.proxy };
+            await renderComponent(enriched, zoneElem, id);
             if (component.refresh) {
-                scheduleComponent(component, zoneElem, id);
+                scheduleComponent(enriched, zoneElem, id);
             }
         }
     }
@@ -498,13 +545,14 @@ async function bootstrap() {
 
 document.addEventListener('DOMContentLoaded', bootstrap);
 
-export { loadConfig, 
-    validateConfig, 
-    validateLayout, 
-    validateComponents, 
-    validateComponent, 
-    registerComponent, 
-    getComponent, 
+export {
+    loadConfig,
+    validateConfig,
+    validateLayout,
+    validateComponents,
+    validateComponent,
+    registerComponent,
+    getComponent,
     buildImage,
     bootstrap,
     buildClock,
@@ -513,4 +561,6 @@ export { loadConfig,
     renderComponent,
     buildWeather,
     fetchWeatherData,
+    buildRss,
+    parseRssFeed,
 };

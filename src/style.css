@@ -146,6 +146,27 @@ html, body {
     }
 
   /* ============================================================
+    RSS COMPONENT
+    ============================================================ */
+    .component-card:has(.rss-item) {
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .rss-item {
+      font-size: 0.95em;
+      padding: 0.4em 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      white-space: normal;
+      word-break: break-word;
+      line-height: 1.4;
+    }
+
+    .rss-item:last-child {
+      border-bottom: none;
+    }
+
+  /* ============================================================
     CLOCK COMPONENT
     ============================================================ */
     .clock-card {
