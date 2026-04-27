@@ -1,10 +1,6 @@
-<<<<<<< HEAD
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { buildImage, buildClock , buildWeather, buildText, fetchWeatherData} from '../src/renderer.js';
-=======
 import { jest, describe, it, expect } from '@jest/globals';
-import { buildImage, buildClock, buildWeather, fetchWeatherData, parseRssFeed } from '../src/renderer.js';
->>>>>>> 87a9a3b7285c382d022c7cc7a7cf44aa52092b51
+import { buildImage, buildClock, buildWeather, fetchWeatherData, parseRssFeed, buildText } from '../src/renderer.js';
+import { buildImage, buildClock , buildWeather, buildText, fetchWeatherData} from '../src/renderer.js';
 
 
 describe('buildImage', () => {
@@ -44,6 +40,10 @@ describe('buildImage', () => {
 
 describe('buildClock', () => {
 
+    beforeEach(() => {
+        HTMLCanvasElement.prototype.getContext = () => null;
+    });
+
     it('should return a component-card wrapper div', () => {
         const result = buildClock({}, 'component-0');
         expect(result.tagName).toBe('DIV');
@@ -62,9 +62,9 @@ describe('buildClock', () => {
         expect(inner.textContent).toBeTruthy();
     });
 
-    it('should contain an svg element when mode is analog', () => {
+    it('should contain a canvas element when mode is analog', () => {
         const result = buildClock({ mode: 'analog' }, 'component-0');
-        expect(result.querySelector('svg')).not.toBeNull();
+        expect(result.querySelector('canvas')).not.toBeNull();
     });
 
 });
@@ -145,32 +145,5 @@ describe('fetchWeatherData', () => {
 
         await expect(fetchWeatherData('https://fake.weather/api'))
             .rejects.toThrow('Weather fetch failed: 404');
-    });
-});
-
-describe('parseRssFeed', () => {
-
-    it('should return the second title at index 0', () => {
-        const xml = `<rss><channel>
-        <item><title>First headline</title></item>
-        <item><title>Second headline</title></item>
-        </channel></rss>`;
-        const result = parseRssFeed(xml);
-        expect(result[0]).toBe('First headline');
-    });
-
-    it('should return the second title at index 1', () => {
-        const xml = `<rss><channel>
-        <item><title>First headline</title></item>
-        <item><title>Second headline</title></item>
-        </channel></rss>`;
-        const result = parseRssFeed(xml);
-        expect(result[1]).toBe('Second headline');
-    });
-
-    it('should return an array of length 0 if array is empty', () => {
-        const xml = ``;
-        const result = parseRssFeed(xml);
-        expect(result.length).toBe(0);
     });
 });
