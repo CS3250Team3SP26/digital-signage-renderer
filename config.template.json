@@ -17,6 +17,11 @@
     },
     {
       "zone": "main",
+      "type": "clock",
+      "mode": "digital"
+    },
+    {
+      "zone": "main",
       "type": "rss",
       "url": "https://feeds.bbci.co.uk/news/rss.xml",
       "maxItems": 5,
