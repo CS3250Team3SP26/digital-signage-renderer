@@ -162,7 +162,6 @@ function registerComponent(type, buildType) {
     }
     registry.set(type, buildType);
 }
-<<<<<<< HEAD
 /* istanbul ignore next */
 function registerComponents() {
     registerComponent('image', buildImage);
@@ -173,8 +172,6 @@ function registerComponents() {
     });
 }
 
-=======
->>>>>>> dev
 /**
  * Retrieves the builder function for a given component type from the registry
  * @param {String} type The component type to retrieve
