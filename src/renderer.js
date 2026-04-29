@@ -231,7 +231,7 @@ async function buildRss(component, id) {
 
     const url = (component.proxy ?? '') + component.url;
 
-    await fetch(url)
+    await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(url))
         .then(response => response.text())
         .then(text => {
             parseRssFeed(text).forEach(title => {
