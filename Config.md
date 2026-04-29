@@ -49,6 +49,7 @@ Optional visual configuration applied globally to the display.
 |---|---|---|---|
 | `background` | string | `"#111111"` | Background color (any valid CSS color value) |
 | `color` | string | `"#ffffff"` | Text color (any valid CSS color value) |
+| `secondaryColor` | string | `"#888888"` | Secondary Text color (any valid CSS color value) |
 | `fontFamily` | string | `"sans-serif"` | Font family (any valid CSS font-family value) |
 
 ---
@@ -59,6 +60,8 @@ Optional visual configuration applied globally to the display.
 |---|---|
 | [Image](#image-component) | Displays a static image in a zone. |
 | [RSS Feed](#rss-feed-component) | Fetches and displays headlines from an RSS feed URL. |
+| [Clock](#clock-component) | Displays a digital or analog clock. |
+| [Weather](#weather-component) | Displays current weather for location provided. |
 
 ---
 
@@ -126,6 +129,50 @@ Fetches and displays headlines from an RSS feed URL. Automatically re-fetches on
 > **Note on `refresh`:** `60000` ms = 60 seconds. Setting this too low (e.g., under 10 seconds) may result in your requests being rate-limited or blocked by the feed provider.
 
 > **Note on CORS:** Most major news RSS feeds block direct browser requests. If your feed fails to load, make sure `proxy` is set at the top level of your config. See the [proxy section](#proxy) above.
+
+---
+
+### Clock Component
+
+Displays a digital or analog clock.
+
+| Field | Required | Type | Description |
+|---|---|---|---|
+| `zone` | Yes | string | Zone to render into. |
+| `type` | Yes | string | Must be `"clock"` |
+| `mode` | No | string | Set to `"analog"` for and analog clock. Otherwise renders as a digital display. |
+
+**Example**
+
+```json
+{
+  "zone": "header",
+  "type": "clock",
+  "mode": "digital"
+}
+```
+
+----
+
+### Weather Component
+
+Displays current weather for location provided.
+
+| Field | Required | Type | Description |
+|---|---|---|---|
+| `zone` | Yes | string | Zone to render into. |
+| `type` | Yes | string | Must be `"weather"` |
+| `url` | yes | string | Set to open weather api link. |
+
+**Example**
+
+```json
+{
+  "zone": "main",
+  "type": "weather",
+  "url": "https://api.open-meteo.com/v1/forecast?latitude=39.74&longitude=-104.99&current=temperature_2m,weathercode,relative_humidity_2m,wind_speed_10m,apparent_temperature&temperature_unit=fahrenheit&wind_speed_unit=mph"
+}
+```
 
 ---
 
