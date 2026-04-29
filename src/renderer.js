@@ -135,17 +135,6 @@ const REQUIRED_COMPONENT_FIELDS = {
  * To add a new component type, simply call registerComponent with the type string and the builder function that creates the DOM element for that component
  */
 /* istanbul ignore next */
-function registerComponents() {
-    // To register a new component add it below
-    // ex. registerComponent('type', buildType)
-    registerComponent('image', buildImage);
-    registerComponent('clock', buildClock);
-    registerComponent('rss', buildRss);
-    registerComponent('weather', async (component, id) => { 
-        const data = await fetchWeatherData(component.url);
-        return buildWeather(data, id);
-    });
-}
 
 /**
  * Registers a component type with its corresponding builder function
@@ -166,6 +155,7 @@ function registerComponent(type, buildType) {
 function registerComponents() {
     registerComponent('image', buildImage);
     registerComponent('clock', buildClock);
+    registerComponent('rss', buildRss);
     registerComponent('weather', async (component, id) => { 
         const data = await fetchWeatherData(component.latitude, component.longitude, component.units);
         return buildWeather(data, id, component.city);
