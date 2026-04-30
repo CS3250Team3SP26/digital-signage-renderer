@@ -230,11 +230,11 @@ async function buildRss(component, id) {
     card.dataset.componentId = id;
 
     const url = component.proxy ? `${component.proxy}${encodeURIComponent(component.url)}` : component.url;
-    
+
     await fetch(url)
         .then(response => response.text())
         .then(text => {
-            parseRssFeed(text).forEach(title => {
+            parseRssFeed(text).slice(0, component.maxItems).forEach(title => {
                 const item = document.createElement('div');
                 item.className = 'rss-item';
                 item.textContent = title;
