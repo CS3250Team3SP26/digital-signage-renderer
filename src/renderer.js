@@ -213,7 +213,7 @@ function parseRssFeed(xmlString) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlString, 'text/xml');
     const items = doc.querySelectorAll('item');
-    const titles = Array.from(items).map(item => item.querySelector('title').textContent);
+    const titles = Array.from(items).map(item => item.querySelector('title')?.textContent??'');
     return titles;
 }
 
