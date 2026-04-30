@@ -213,7 +213,7 @@ function parseRssFeed(xmlString) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlString, 'text/xml');
     const items = doc.querySelectorAll('item');
-    const titles = Array.from(items).map(item => item.querySelector('title').textContent);
+    const titles = Array.from(items).map(item => item.querySelector('title')?.textContent??'');
     return titles;
 }
 
@@ -229,12 +229,12 @@ async function buildRss(component, id) {
     card.className = 'component-card';
     card.dataset.componentId = id;
 
-    const url = (component.proxy ?? '') + component.url;
+    const url = component.proxy ? `${component.proxy}${encodeURIComponent(component.url)}` : component.url;
 
     await fetch(url)
         .then(response => response.text())
         .then(text => {
-            parseRssFeed(text).forEach(title => {
+            parseRssFeed(text).slice(0, component.maxItems).forEach(title => {
                 const item = document.createElement('div');
                 item.className = 'rss-item';
                 item.textContent = title;
