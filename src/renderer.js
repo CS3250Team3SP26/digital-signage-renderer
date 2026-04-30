@@ -436,6 +436,72 @@ function drawAnalogClock() {
 
     return svg;
 }
+// ============================================================
+// PARTICLE ENGINE
+// ============================================================
+/* istanbul ignore next */
+
+
+
+let _particleCanvas = null;
+let _particleCtx = null;
+let _particles = [];
+let _animationFrameId = null;
+/* istanbul ignore next */
+function initParticleEngine() {
+    _particleCanvas = document.getElementById('particle-canvas');
+    if (!_particleCanvas) return;
+    _particleCtx = _particleCanvas.getContext('2d');
+    _resizeParticleCanvas();
+    window.addEventListener('resize', _resizeParticleCanvas);
+}
+/* istanbul ignore next */
+function _resizeParticleCanvas() {
+    if (!_particleCanvas) return;
+    _particleCanvas.width = window.innerWidth;
+    _particleCanvas.height = window.innerHeight;
+}
+/* istanbul ignore next */
+function _createParticle() {
+    return {
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        vx: (Math.random() - 0.5) * 4,
+        vy: (Math.random() - 0.5) * 4,
+        opacity: 0.8 + Math.random() * 0.2,
+        size: Math.random() * 2.5 + 1,
+    };
+}
+/* istanbul ignore next */
+function scatter(count = 45) {
+    if (!_particleCtx) return;
+    for (let i = 0; i < count; i++) {
+        _particles.push(_createParticle());
+    }
+    if (!_animationFrameId) {
+        _animationFrameId = requestAnimationFrame(_animateParticles);
+    }
+}
+/* istanbul ignore next */
+function _animateParticles() {
+    if (!_particleCtx || _particles.length === 0) {
+        _particleCtx && _particleCtx.clearRect(0, 0, _particleCanvas.width, _particleCanvas.height);
+        _animationFrameId = null;
+        return;
+    }
+    _particleCtx.clearRect(0, 0, _particleCanvas.width, _particleCanvas.height);
+    _particles = _particles.filter(p => p.opacity > 0.01);
+    for (const p of _particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.opacity -= 0.012;
+        _particleCtx.beginPath();
+        _particleCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        _particleCtx.fillStyle = `rgba(255, 255, 255, ${Math.max(0, p.opacity)})`;
+        _particleCtx.fill();
+    }
+    _animationFrameId = requestAnimationFrame(_animateParticles);
+}
 
 
 // ============================================================
@@ -481,6 +547,12 @@ function scheduleComponent(component, zoneElem, id) {
     }
     const intervalId = setInterval(async () => {
         await renderComponent(component, zoneElem, id);
+        /* istanbul ignore next */
+        if (component.type === 'clock') {
+            scatter(10);  // small burst for clock
+        } else if (component.type === 'rss') {
+            scatter(80);  // big burst for RSS
+        }
     }, component.refresh);
     return {
         intervalId,
@@ -523,6 +595,8 @@ async function bootstrap() {
         document.documentElement.style.setProperty('--color-secondary', config.theme?.secondaryColor ?? '#888888');
         document.documentElement.style.setProperty('--font-family', config.theme?.fontFamily ?? 'sans-serif');
         registerComponents();
+        initParticleEngine();
+
 
         for (const [i, component] of config.components.entries()) {
             const id = `component-${i}`;
@@ -563,4 +637,7 @@ export {
     fetchWeatherData,
     buildRss,
     parseRssFeed,
+    initParticleEngine,
+    scatter,
+    _createParticle,
 };
