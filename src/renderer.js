@@ -125,7 +125,7 @@ const REQUIRED_COMPONENT_FIELDS = {
     image: ['src', 'alt'],
     clock: [],
     rss: ['url'],
-    weather: ['url'],
+    weather: ['latitude','longitude'],
 };
 
 
@@ -135,17 +135,6 @@ const REQUIRED_COMPONENT_FIELDS = {
  * To add a new component type, simply call registerComponent with the type string and the builder function that creates the DOM element for that component
  */
 /* istanbul ignore next */
-function registerComponents() {
-    // To register a new component add it below
-    // ex. registerComponent('type', buildType)
-    registerComponent('image', buildImage);
-    registerComponent('clock', buildClock);
-    registerComponent('rss', buildRss);
-    registerComponent('weather', async (component, id) => { 
-        const data = await fetchWeatherData(component.url);
-        return buildWeather(data, id);
-    });
-}
 
 /**
  * Registers a component type with its corresponding builder function
@@ -162,6 +151,17 @@ function registerComponent(type, buildType) {
     }
     registry.set(type, buildType);
 }
+/* istanbul ignore next */
+function registerComponents() {
+    registerComponent('image', buildImage);
+    registerComponent('clock', buildClock);
+    registerComponent('rss', buildRss);
+    registerComponent('weather', async (component, id) => { 
+        const data = await fetchWeatherData(component.latitude, component.longitude, component.units);
+        return buildWeather(data, id, component.city);
+    });
+}
+
 /**
  * Retrieves the builder function for a given component type from the registry
  * @param {String} type The component type to retrieve
@@ -254,7 +254,8 @@ async function buildRss(component, id) {
  * @param {string} url - The URL to fetch weather data from
  * @returns {Promise<Object>} The weather data object
  */
-async function fetchWeatherData(url) {
+async function fetchWeatherData(latitude, longitude, units = 'fahrenheit') {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weathercode,relative_humidity_2m,wind_speed_10m,apparent_temperature&temperature_unit=${units}&wind_speed_unit=mph`;
     const response = await fetch(url);
     if (!response.ok) {
         throw new Error(`Weather fetch failed: ${response.status}`);
@@ -267,7 +268,7 @@ async function fetchWeatherData(url) {
  * @param {string} id - The unique identifier to set as data-component-id
  * @returns {HTMLElement} The constructed weather card element
  */
-function buildWeather(data, id) {
+function buildWeather(data, id, city = 'Unknown') {
     const card = document.createElement('div');
     card.className = 'component-card';
     card.dataset.componentId = id;
@@ -284,9 +285,9 @@ function buildWeather(data, id) {
         95: "Thunderstorm"
     };
 
-    const city = document.createElement('div');
-    city.className = 'weather-city';
-    city.textContent = "Denver";
+    const cityEl = document.createElement('div');
+    cityEl.className = 'weather-city';
+    cityEl.textContent = city;
 
     const temp = document.createElement('div');
     temp.className = 'weather-temp';
@@ -307,8 +308,8 @@ function buildWeather(data, id) {
     const feelsLike = document.createElement('div');
     feelsLike.className = 'weather-feels-like';
     feelsLike.innerHTML = `<span>Feels like</span><span>${data.current.apparent_temperature}°F</span>`;
-
-    card.appendChild(city);
+    
+    card.appendChild(cityEl);
     card.appendChild(temp);
     card.appendChild(condition);
     card.appendChild(humidity);
