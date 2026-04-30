@@ -229,9 +229,9 @@ async function buildRss(component, id) {
     card.className = 'component-card';
     card.dataset.componentId = id;
 
-    const url = (component.proxy ?? '') + component.url;
-
-    await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(url))
+    const url = component.proxy ? `${component.proxy}${encodeURIComponent(component.url)}` : component.url;
+    
+    await fetch(url)
         .then(response => response.text())
         .then(text => {
             parseRssFeed(text).forEach(title => {
