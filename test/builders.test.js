@@ -138,4 +138,35 @@ describe('parseRssFeed', () => {
         const result = parseRssFeed(xml);
         expect(result.length).toBe(0);
     });
+
+    describe('buildText', () => {
+
+    it('should return a component-card wrapper div', () => {
+        const component = { content: 'Hello world' };
+        const result = buildText(component, 'component-1');
+        expect(result.tagName).toBe('DIV');
+        expect(result.classList.contains('component-card')).toBe(true);
+    });
+
+    it('should stamp data-component-id on the card', () => {
+        const component = { content: 'Hello world' };
+        const result = buildText(component, 'component-1');
+        expect(result.dataset.componentId).toBe('component-1');
+    });
+
+    it('should display the correct text from component.content', () => {
+        const component = { content: 'Hello world' };
+        const result = buildText(component, 'component-1');
+        const inner = result.querySelector('div');
+        expect(inner).not.toBeNull();
+        expect(inner.textContent).toBe('Hello world');
+    });
+
+    it('should display different content for different configs', () => {
+        const component = { content: 'Dashboard v2' };
+        const result = buildText(component, 'component-2');
+        expect(result.querySelector('div').textContent).toBe('Dashboard v2');
+    });
+
+});
 });

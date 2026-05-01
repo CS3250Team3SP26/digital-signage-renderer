@@ -534,7 +534,9 @@ async function bootstrap() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', bootstrap);
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', bootstrap);
+}
 
 export { loadConfig, 
     validateConfig, 
