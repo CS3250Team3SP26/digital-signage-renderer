@@ -139,7 +139,7 @@ describe('parseRssFeed', () => {
         expect(result.length).toBe(0);
     });
 
-    describe('buildText', () => {
+describe('buildText', () => {
 
     it('should return a component-card wrapper div', () => {
         const component = { content: 'Hello world' };
