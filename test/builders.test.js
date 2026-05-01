@@ -59,7 +59,7 @@ describe('buildClock', () => {
 
     it('should contain an svg element when mode is analog', () => {
         const result = buildClock({ mode: 'analog' }, 'component-0');
-        expect(result.querySelector('svg')).toBeNull();
+        expect(result.querySelector('svg')).not.toBeNull();
     });
 
 });

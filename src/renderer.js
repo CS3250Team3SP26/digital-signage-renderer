@@ -319,17 +319,28 @@ function buildWeather(data, id) {
  */
 function buildClock(component, id) {
     const card = document.createElement('div');
-    card.className = 'component-card';
+    card.className = 'component-card clock-card';
     card.dataset.componentId = id;
 
     if (component.mode === "analog") {
-        const canvas = document.createElement('canvas') 
-        drawAnalogClock(canvas);
-        card.appendChild(canvas);
+        const clock = drawAnalogClock();
+        card.appendChild(clock);
     } else {
-        const div = document.createElement('div');
-        div.textContent = new Date().toLocaleTimeString();
-        card.appendChild(div);
+        const time = document.createElement('div');
+        time.className = 'clock-time';
+        time.textContent = new Date().toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+
+        const date = document.createElement('div');
+        date.className = 'clock-date';
+        date.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+        card.appendChild(time);
+        card.appendChild(date);
     }
     return card;
 }
