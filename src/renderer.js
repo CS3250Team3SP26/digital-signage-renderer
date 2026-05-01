@@ -136,8 +136,8 @@ const REQUIRED_COMPONENT_FIELDS = {
 /* istanbul ignore next */
 function registerComponents() {
     // To register a new component add it below
-    // ex. registerComponent('type', buildType)
-    // registerComponent('rss', buildRss);
+    registerComponent('type', buildType)
+    registerComponent('rss', buildRss);
     registerComponent('image', buildImage);
     registerComponent('clock', buildClock);
     registerComponent('text', buildText);
