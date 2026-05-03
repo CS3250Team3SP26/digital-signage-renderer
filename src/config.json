@@ -6,7 +6,8 @@
   "theme": {
     "background": "#111111",
     "color": "#ffffff",
-    "fontFamily": "sans-serif"
+    "fontFamily": "sans-serif",
+    "backgroundImage": ""
   },
   "components": [
     {
@@ -18,7 +19,8 @@
     {
       "zone": "main",
       "type": "clock",
-      "mode": "digital"
+      "mode": "digital",
+      "backgroundImage": ""
     },
     {
       "zone": "main",
@@ -26,6 +28,13 @@
       "url": "https://feeds.bbci.co.uk/news/rss.xml",
       "maxItems": 5,
       "refresh": 60000
+    },
+    {
+      "zone": "main",
+      "type": "weather",
+      "city": "Denver",
+      "latitude": 39.7392,
+      "longitude": -104.9903
     }
   ]
 }

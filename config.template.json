@@ -6,7 +6,8 @@
   "theme": {
     "background": "#111111",
     "color": "#ffffff",
-    "fontFamily": "sans-serif"
+    "fontFamily": "sans-serif",
+    "_comment_backgroundImage": "Optional. Add 'backgroundImage' to set a full-page background image (URL or relative path). Applied with background-size: cover over theme.background. Example: './assets/bg.jpg' or 'https://example.com/bg.jpg'"
   },
   "components": [
     {
@@ -18,7 +19,8 @@
     {
       "zone": "main",
       "type": "clock",
-      "mode": "digital"
+      "mode": "digital",
+      "_comment_backgroundImage": "Optional. Add 'backgroundImage' to any component to set a per-card background image (URL or relative path). Applied with background-size: cover. Example: './assets/card-bg.jpg'"
     },
     {
       "zone": "main",
