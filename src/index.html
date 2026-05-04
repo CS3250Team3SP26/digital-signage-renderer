@@ -7,12 +7,12 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <canvas id="particle-canvas"></canvas>
   <div id="display-root">
     <div id="header" class="zone"></div>
     <div id="main" class="zone"></div>
     <div id="sidebar" class="zone"></div>
     <div id="footer" class="zone"></div>
   </div>
+  <canvas id="particle-canvas" style="position:fixed; top:0; left:0; pointer-events:none; z-index:999;"></canvas>
   <script type="module" src="renderer.js"></script>
 </body>

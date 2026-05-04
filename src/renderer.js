@@ -454,6 +454,7 @@ function initParticleEngine() {
     _particleCtx = _particleCanvas.getContext('2d');
     _resizeParticleCanvas();
     window.addEventListener('resize', _resizeParticleCanvas);
+    setInterval(() => scatter(5), 200);
 }
 /* istanbul ignore next */
 function _resizeParticleCanvas() {
@@ -462,21 +463,21 @@ function _resizeParticleCanvas() {
     _particleCanvas.height = window.innerHeight;
 }
 /* istanbul ignore next */
-function _createParticle() {
+function _createParticle(maxOpacity = 0.15) {
     return {
         x: Math.random() * window.innerWidth,
         y: Math.random() * window.innerHeight,
         vx: (Math.random() - 0.5) * 4,
         vy: (Math.random() - 0.5) * 4,
-        opacity: 0.8 + Math.random() * 0.2,
+        opacity: maxOpacity * (0.8 + Math.random() * 0.2),
         size: Math.random() * 2.5 + 1,
     };
 }
 /* istanbul ignore next */
-function scatter(count = 45) {
+function scatter(count = 45, maxOpacity = 0.15) {
     if (!_particleCtx) return;
     for (let i = 0; i < count; i++) {
-        _particles.push(_createParticle());
+        _particles.push(_createParticle(maxOpacity));
     }
     if (!_animationFrameId) {
         _animationFrameId = requestAnimationFrame(_animateParticles);
@@ -548,10 +549,8 @@ function scheduleComponent(component, zoneElem, id) {
     const intervalId = setInterval(async () => {
         await renderComponent(component, zoneElem, id);
         /* istanbul ignore next */
-        if (component.type === 'clock') {
-            scatter(10);  // small burst for clock
-        } else if (component.type === 'rss') {
-            scatter(80);  // big burst for RSS
+        if (component.type === 'rss' || component.type === 'weather') {
+            scatter(80, 0.5);  // big bright burst on data update
         }
     }, component.refresh);
     return {
@@ -596,7 +595,8 @@ async function bootstrap() {
         document.documentElement.style.setProperty('--font-family', config.theme?.fontFamily ?? 'sans-serif');
         registerComponents();
         initParticleEngine();
-
+        window.scatter = scatter;
+        setTimeout(() => scatter(15, 0.4), 100)
 
         for (const [i, component] of config.components.entries()) {
             const id = `component-${i}`;
@@ -606,7 +606,9 @@ async function bootstrap() {
             if (component.refresh) {
                 scheduleComponent(enriched, zoneElem, id);
             }
+            
         }
+        document.getElementById('display-root').style.visibility = 'visible';
     }
     catch (error) {
         console.error("Error during bootstrap:", error);
@@ -618,6 +620,7 @@ async function bootstrap() {
 }
 
 document.addEventListener('DOMContentLoaded', bootstrap);
+
 
 export {
     loadConfig,

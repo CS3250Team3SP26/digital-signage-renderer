@@ -197,3 +197,6 @@ html, body {
       pointer-events: none;
       z-index: 999;
     }
+    #display-root {
+      visibility: hidden;
+  }
