@@ -5,4 +5,7 @@ node_modules/
 coverage/
 
 # AI
-.claude/
+.claude/.DS_Store
+
+# Add config.json to .gitignore
+src/config.json
