@@ -156,9 +156,9 @@ function registerComponents() {
     registerComponent('image', buildImage);
     registerComponent('clock', buildClock);
     registerComponent('rss', buildRss);
-    registerComponent('weather', async (component, id) => { 
+    registerComponent('weather', async (component, id) => {
         const data = await fetchWeatherData(component.latitude, component.longitude, component.units);
-        return buildWeather(data, id, component.city);
+        return buildWeather(data, id, component.city, component.weatherBackground);
     });
 }
 
@@ -268,7 +268,7 @@ async function fetchWeatherData(latitude, longitude, units = 'fahrenheit') {
  * @param {string} id - The unique identifier to set as data-component-id
  * @returns {HTMLElement} The constructed weather card element
  */
-function buildWeather(data, id, city = 'Unknown') {
+function buildWeather(data, id, city = 'Unknown', weatherBackground = false) {
     const card = document.createElement('div');
     card.className = 'component-card';
     card.dataset.componentId = id;
@@ -281,8 +281,26 @@ function buildWeather(data, id, city = 'Unknown') {
         45: "Foggy",
         61: "Light rain",
         63: "Moderate rain",
+        71: "Light snow",
+        73: "Moderate snow",
+        75: "Heavy snow",
         80: "Rain showers",
         95: "Thunderstorm"
+    };
+
+    const weatherBackgrounds = {
+        0: "./assets/weather/clear.jpg",
+        1: "./assets/weather/partly-cloudy.jpg",
+        2: "./assets/weather/partly-cloudy.jpg",
+        3: "./assets/weather/overcast.jpg",
+        45: "./assets/weather/foggy.jpg",
+        61: "./assets/weather/light-rain.jpg",
+        63: "./assets/weather/moderate-rain.jpg",
+        71: "./assets/weather/light-snow.jpg",
+        73: "./assets/weather/moderate-snow.jpg",
+        75: "./assets/weather/heavy-snow.jpg",
+        80: "./assets/weather/heavy-rain.jpg",
+        95: "./assets/weather/thunderstorm.jpg"
     };
 
     const cityEl = document.createElement('div');
@@ -309,6 +327,14 @@ function buildWeather(data, id, city = 'Unknown') {
     feelsLike.className = 'weather-feels-like';
     feelsLike.innerHTML = `<span>Feels like</span><span>${data.current.apparent_temperature}°F</span>`;
     
+    const bgPath = weatherBackgrounds[data.current.weathercode];
+    if (bgPath && weatherBackground) {
+        const root = document.getElementById('display-root');
+        if (root) {
+            root.style.setProperty('--bg-image', `url("${bgPath}")`);
+        }
+    }
+
     card.appendChild(cityEl);
     card.appendChild(temp);
     card.appendChild(condition);
@@ -447,14 +473,21 @@ function drawAnalogClock() {
 /* istanbul ignore next */
 
 /**
- * Rendes a single component into the target zone
- * Clears the zones exsisting content and bulds the DOm elemetn and appends it
+ * Renders a single component into the target zone.
+ * If the component config includes a backgroundImage field, applies it to the
+ * card element with background-size: cover so it fills the card surface.
  * @param {Object} component The component configuration object to render
- * @param {HTMLElement} zoneElem the targetzone DOM element
+ * @param {HTMLElement} zoneElem the target zone DOM element
+ * @param {string} id The unique component identifier
  */
 async function renderComponent(component, zoneElem, id) {
     const builder = getComponent(component.type);
     const element = await builder(component, id);
+    if (component.backgroundImage) {
+        element.style.backgroundImage = `url(${component.backgroundImage})`;
+        element.style.backgroundSize = 'cover';
+        element.style.backgroundPosition = 'center';
+    }
     const existing = zoneElem.querySelector(`[data-component-id="${id}"]`);
     if (existing) {
         existing.replaceWith(element);
@@ -523,12 +556,15 @@ async function bootstrap() {
         document.documentElement.style.setProperty('--color-text', config.theme?.color ?? '#ffffff');
         document.documentElement.style.setProperty('--color-secondary', config.theme?.secondaryColor ?? '#888888');
         document.documentElement.style.setProperty('--font-family', config.theme?.fontFamily ?? 'sans-serif');
+        if (config.theme?.backgroundImage) {
+            document.documentElement.style.setProperty('--bg-image', `url(${config.theme.backgroundImage})`);
+        }
         registerComponents();
 
         for (const [i, component] of config.components.entries()) {
             const id = `component-${i}`;
             const zoneElem = zoneElems.get(component.zone);
-            const enriched = { ...component, proxy: config.proxy };
+            const enriched = { ...component, proxy: config.proxy, weatherBackground: config.theme?.weatherBackground ?? false };
             await renderComponent(enriched, zoneElem, id);
             if (component.refresh) {
                 scheduleComponent(enriched, zoneElem, id);
