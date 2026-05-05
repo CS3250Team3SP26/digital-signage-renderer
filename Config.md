@@ -51,6 +51,8 @@ Optional visual configuration applied globally to the display.
 | `color` | string | `"#ffffff"` | Text color (any valid CSS color value) |
 | `secondaryColor` | string | `"#888888"` | Secondary Text color (any valid CSS color value) |
 | `fontFamily` | string | `"sans-serif"` | Font family (any valid CSS font-family value) |
+| `backgroundImage` | string | *(none)* | Optional. Sets a full-page background image (URL or relative path). Applied with `background-size: cover` over `theme.background`. Falls back to `theme.background` color if omitted. |
+| `weatherBackground` | boolean | `false` | Optional. Set to `true` to enable dynamic weather-based background images that update with the weather component's current conditions. When active, this overrides `backgroundImage`. Omit or set to `false` to leave the background untouched by the weather component. |
 
 ---
 
@@ -171,6 +173,27 @@ Displays current weather for location provided.
   "zone": "main",
   "type": "weather",
   "url": "https://api.open-meteo.com/v1/forecast?latitude=39.74&longitude=-104.99&current=temperature_2m,weathercode,relative_humidity_2m,wind_speed_10m,apparent_temperature&temperature_unit=fahrenheit&wind_speed_unit=mph"
+}
+```
+
+---
+
+### Per-Component Background Image
+
+Any component can have its own background image by adding a `backgroundImage` field directly to the component object. This sets a background image on that component's card only — it does not affect the page background or other components.
+
+| Field | Required | Type | Description |
+|---|---|---|---|
+| `backgroundImage` | No | string | URL or relative path to an image. Applied with `background-size: cover` on the component card. If omitted, the card uses its default background. |
+
+**Example:**
+
+```json
+{
+  "zone": "main",
+  "type": "clock",
+  "mode": "digital",
+  "backgroundImage": "./assets/card-bg.jpg"
 }
 ```
 

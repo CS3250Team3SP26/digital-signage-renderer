@@ -7,7 +7,9 @@
     "background": "#111111",
     "color": "#ffffff",
     "fontFamily": "sans-serif",
-    "_comment_backgroundImage": "Optional. Add 'backgroundImage' to set a full-page background image (URL or relative path). Applied with background-size: cover over theme.background. Example: './assets/bg.jpg' or 'https://example.com/bg.jpg'"
+    "_comment_backgroundImage": "Optional. Add 'backgroundImage' to set a full-page background image (URL or relative path). Applied with background-size: cover over theme.background. If omitted, theme.background color is used. Example: './assets/bg.jpg' or 'https://example.com/bg.jpg'",
+    "weatherBackground": true,
+    "_comment_weatherBackground": "Optional boolean. Set to true to enable dynamic weather-based backgrounds that change based on current conditions (clear, rain, snow, etc.). When true, the weather component overrides backgroundImage while it is active. Omit or set to false to leave the background untouched by the weather component."
   },
   "components": [
     {

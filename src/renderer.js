@@ -156,9 +156,9 @@ function registerComponents() {
     registerComponent('image', buildImage);
     registerComponent('clock', buildClock);
     registerComponent('rss', buildRss);
-    registerComponent('weather', async (component, id) => { 
+    registerComponent('weather', async (component, id) => {
         const data = await fetchWeatherData(component.latitude, component.longitude, component.units);
-        return buildWeather(data, id, component.city);
+        return buildWeather(data, id, component.city, component.weatherBackground);
     });
 }
 
@@ -268,7 +268,7 @@ async function fetchWeatherData(latitude, longitude, units = 'fahrenheit') {
  * @param {string} id - The unique identifier to set as data-component-id
  * @returns {HTMLElement} The constructed weather card element
  */
-function buildWeather(data, id, city = 'Unknown') {
+function buildWeather(data, id, city = 'Unknown', weatherBackground = false) {
     const card = document.createElement('div');
     card.className = 'component-card';
     card.dataset.componentId = id;
@@ -328,7 +328,7 @@ function buildWeather(data, id, city = 'Unknown') {
     feelsLike.innerHTML = `<span>Feels like</span><span>${data.current.apparent_temperature}°F</span>`;
     
     const bgPath = weatherBackgrounds[data.current.weathercode];
-    if (bgPath) {
+    if (bgPath && weatherBackground) {
         const root = document.getElementById('display-root');
         if (root) {
             root.style.setProperty('--bg-image', `url("${bgPath}")`);
@@ -564,7 +564,7 @@ async function bootstrap() {
         for (const [i, component] of config.components.entries()) {
             const id = `component-${i}`;
             const zoneElem = zoneElems.get(component.zone);
-            const enriched = { ...component, proxy: config.proxy };
+            const enriched = { ...component, proxy: config.proxy, weatherBackground: config.theme?.weatherBackground ?? false };
             await renderComponent(enriched, zoneElem, id);
             if (component.refresh) {
                 scheduleComponent(enriched, zoneElem, id);
