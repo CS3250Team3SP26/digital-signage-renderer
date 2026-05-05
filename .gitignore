@@ -7,5 +7,8 @@ coverage/
 # AI
 .claude/.DS_Store
 
+# Mac system files
+**/.DS_Store
+
 # Add config.json to .gitignore
 src/config.json
