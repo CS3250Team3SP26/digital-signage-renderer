@@ -486,7 +486,7 @@ function scatter(count = 45, maxOpacity = 0.15) {
 /* istanbul ignore next */
 function _animateParticles() {
     if (!_particleCtx || _particles.length === 0) {
-        _particleCtx && _particleCtx.clearRect(0, 0, _particleCanvas.width, _particleCanvas.height);
+        _particleCtx?.clearRect(0, 0, _particleCanvas.width, _particleCanvas.height);
         _animationFrameId = null;
         return;
     }
@@ -595,7 +595,7 @@ async function bootstrap() {
         document.documentElement.style.setProperty('--font-family', config.theme?.fontFamily ?? 'sans-serif');
         registerComponents();
         initParticleEngine();
-        window.scatter = scatter;
+        globalThis.scatter = scatter;
         setTimeout(() => scatter(15, 0.4), 100)
 
         for (const [i, component] of config.components.entries()) {
