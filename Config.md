@@ -158,13 +158,15 @@ Displays a digital or analog clock.
 
 ### Weather Component
 
-Displays current weather for location provided.
+Displays current weather for a given location using the Open-Meteo API.
 
 | Field | Required | Type | Description |
 |---|---|---|---|
 | `zone` | Yes | string | Zone to render into. |
-| `type` | Yes | string | Must be `"weather"` |
-| `url` | yes | string | Set to open weather api link. |
+| `type` | Yes | string | Must be `"weather"`. |
+| `city` | Yes | string | Display name for the city shown on the weather card. |
+| `latitude` | Yes | number | Latitude of the location, used to fetch weather from Open-Meteo. |
+| `longitude` | Yes | number | Longitude of the location, used to fetch weather from Open-Meteo. |
 
 **Example**
 
@@ -172,7 +174,9 @@ Displays current weather for location provided.
 {
   "zone": "main",
   "type": "weather",
-  "url": "https://api.open-meteo.com/v1/forecast?latitude=39.74&longitude=-104.99&current=temperature_2m,weathercode,relative_humidity_2m,wind_speed_10m,apparent_temperature&temperature_unit=fahrenheit&wind_speed_unit=mph"
+  "city": "Denver, CO",
+  "latitude": 39.74,
+  "longitude": -104.99
 }
 ```
 
