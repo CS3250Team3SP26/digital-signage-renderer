@@ -268,7 +268,7 @@ async function fetchWeatherData(latitude, longitude, units = 'fahrenheit') {
  * @param {string} id - The unique identifier to set as data-component-id
  * @returns {HTMLElement} The constructed weather card element
  */
-function buildWeather(data, id, city = 'Unknown', weatherBackground = false) {
+function buildWeather(data, id, city = 'Denver', weatherBackground = false) {
     const card = document.createElement('div');
     card.className = 'component-card';
     card.dataset.componentId = id;
