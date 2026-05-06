@@ -59,7 +59,7 @@ function validateLayout(layout, validZones) {
         if (invalidZones.length > 0) {
             errors.push(`Invalid zones: ${invalidZones.join(', ')}`);
         }
-    } 
+    }
     return errors;
 }
 
@@ -123,16 +123,18 @@ const registry = new Map();
  */
 const REQUIRED_COMPONENT_FIELDS = {
     image: ['src', 'alt'],
-    clock: [], // no required fields for clock, mode is optional
+    clock: [],
     rss: ['url'],
-    text: ['latitude', 'longitude']
+    weather: ['latitude','longitude'],
 };
+
 
 /**
  * Registers all component types with their corresponding builder functions
  * This function should be called during the bootstrap phase to ensure all components are available for rendering
  * To add a new component type, simply call registerComponent with the type string and the builder function that creates the DOM element for that component
  */
+/* istanbul ignore next */
 
 /**
  * Registers a component type with its corresponding builder function
@@ -149,7 +151,6 @@ function registerComponent(type, buildType) {
     }
     registry.set(type, buildType);
 }
-
 /* istanbul ignore next */
 function registerComponents() {
     registerComponent('image', buildImage);
@@ -203,11 +204,16 @@ function buildImage(component, id){
     return card;
 }
 
+/**
+ * Parses an RSS XML string and returns an array of item titles
+ * @param {string} xmlString - The raw XML string from an RSS feed
+ * @returns {string[]} An array of title strings extracted from each <item> element
+ */
 function parseRssFeed(xmlString) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlString, 'text/xml');
     const items = doc.querySelectorAll('item');
-    const titles = Array.from(items).map(item => item.querySelector('title').textContent);
+    const titles = Array.from(items).map(item => item.querySelector('title')?.textContent??'');
     return titles;
 }
 
@@ -223,12 +229,12 @@ async function buildRss(component, id) {
     card.className = 'component-card';
     card.dataset.componentId = id;
 
-    const url = (component.proxy ?? '') + component.url;
+    const url = component.proxy ? `${component.proxy}${encodeURIComponent(component.url)}` : component.url;
 
     await fetch(url)
         .then(response => response.text())
         .then(text => {
-            parseRssFeed(text).forEach(title => {
+            parseRssFeed(text).slice(0, component.maxItems).forEach(title => {
                 const item = document.createElement('div');
                 item.className = 'rss-item';
                 item.textContent = title;
@@ -282,7 +288,7 @@ function buildWeather(data, id, city = 'Unknown', weatherBackground = false) {
         95: "Thunderstorm"
     };
 
-        const weatherBackgrounds = {
+    const weatherBackgrounds = {
         0: "./assets/weather/clear.jpg",
         1: "./assets/weather/partly-cloudy.jpg",
         2: "./assets/weather/partly-cloudy.jpg",
@@ -298,8 +304,8 @@ function buildWeather(data, id, city = 'Unknown', weatherBackground = false) {
     };
 
     const cityEl = document.createElement('div');
-    city.className = 'weather-city';
-    city.textContent = "Denver";
+    cityEl.className = 'weather-city';
+    cityEl.textContent = city;
 
     const temp = document.createElement('div');
     temp.className = 'weather-temp';
@@ -320,7 +326,7 @@ function buildWeather(data, id, city = 'Unknown', weatherBackground = false) {
     const feelsLike = document.createElement('div');
     feelsLike.className = 'weather-feels-like';
     feelsLike.innerHTML = `<span>Feels like</span><span>${data.current.apparent_temperature}°F</span>`;
-
+    
     const bgPath = weatherBackgrounds[data.current.weathercode];
     if (bgPath && weatherBackground) {
         const root = document.getElementById('display-root');
@@ -329,7 +335,7 @@ function buildWeather(data, id, city = 'Unknown', weatherBackground = false) {
         }
     }
 
-    card.appendChild(city);
+    card.appendChild(cityEl);
     card.appendChild(temp);
     card.appendChild(condition);
     card.appendChild(humidity);
@@ -340,11 +346,11 @@ function buildWeather(data, id, city = 'Unknown', weatherBackground = false) {
 
 /**
  * Builds a clock component element based on the provided component configuration
- * If the mode is "analog", returns a canvas element with an analog clock drawn on it.
+ * If the mode is "analog", returns a svg element of an analog clock.
  * Otherwise, returns a div element displaying the current time as text.
  * @param {Object} component - The component configuration object containing the mode field
  * @param {string} id - The unique identifier to set as the data-component-id attribute
- * @returns {HTMLElement} The constructed clock element, either a canvas or a div
+ * @returns {HTMLElement} The constructed clock element, either a svg or a div
  */
 function buildClock(component, id) {
     const card = document.createElement('div');
@@ -373,21 +379,7 @@ function buildClock(component, id) {
     }
     return card;
 }
-/** The buildText function should return a DOM element 
- * displaying static text from component.content.
-*/
-function buildText(component, id) {
-    const card = document.createElement('div');
-    card.className = 'component-card';
-    card.dataset.componentId = id;
 
-    const text = document.createElement('div');
-    text.textContent = component.content;
-
-    card.appendChild(text);
-
-    return card;
-}
 /**
  * Draws an analog clock as an SVG element
  * @returns {HTMLElement} The constructed SVG element representing the analog clock
@@ -543,6 +535,7 @@ function cancelAll(handles) {
     }
 }
 
+
 // ============================================================
 // BOOTSTRAP
 // Entry point - wires everything together
@@ -587,6 +580,21 @@ async function bootstrap() {
     }
 }
 
+/** The buildText function should return a DOM element 
+ * displaying static text from component.content.
+*/
+function buildText(component, id) {
+    const card = document.createElement('div');
+    card.className = 'component-card';
+    card.dataset.componentId = id;
+
+    const text = document.createElement('div');
+    text.textContent = component.content;
+
+    card.appendChild(text);
+
+    return card;
+}
 
 document.addEventListener('DOMContentLoaded', bootstrap);
 
