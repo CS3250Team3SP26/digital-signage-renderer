@@ -59,7 +59,7 @@ function validateLayout(layout, validZones) {
         if (invalidZones.length > 0) {
             errors.push(`Invalid zones: ${invalidZones.join(', ')}`);
         }
-    } 
+    }
     return errors;
 }
 
@@ -125,7 +125,7 @@ const REQUIRED_COMPONENT_FIELDS = {
     image: ['src', 'alt'],
     clock: [],
     rss: ['url'],
-    weather: ['url'],
+    weather: ['latitude','longitude'],
 };
 
 
@@ -134,7 +134,7 @@ const REQUIRED_COMPONENT_FIELDS = {
  * This function should be called during the bootstrap phase to ensure all components are available for rendering
  * To add a new component type, simply call registerComponent with the type string and the builder function that creates the DOM element for that component
  */
-
+/* istanbul ignore next */
 
 /**
  * Registers a component type with its corresponding builder function
@@ -155,9 +155,10 @@ function registerComponent(type, buildType) {
 function registerComponents() {
     registerComponent('image', buildImage);
     registerComponent('clock', buildClock);
-    registerComponent('weather', async (component, id) => { 
-        const data = await fetchWeatherData(component.url);
-        return buildWeather(data, id);
+    registerComponent('rss', buildRss);
+    registerComponent('weather', async (component, id) => {
+        const data = await fetchWeatherData(component.latitude, component.longitude, component.units);
+        return buildWeather(data, id, component.city, component.weatherBackground);
     });
 }
 
@@ -202,12 +203,59 @@ function buildImage(component, id){
     card.appendChild(img);
     return card;
 }
+
+/**
+ * Parses an RSS XML string and returns an array of item titles
+ * @param {string} xmlString - The raw XML string from an RSS feed
+ * @returns {string[]} An array of title strings extracted from each <item> element
+ */
+function parseRssFeed(xmlString) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlString, 'text/xml');
+    const items = doc.querySelectorAll('item');
+    const titles = Array.from(items).map(item => item.querySelector('title')?.textContent??'');
+    return titles;
+}
+
+/**
+ * Builds an RSS component element that fetches and displays feed item titles
+ * @param {Object} component - The component configuration object containing a url field
+ * @param {string} id - The unique identifier to set as the data-component-id attribute
+ * @returns {HTMLElement} The constructed card div (fetch populates it asynchronously)
+ */
+/* istanbul ignore next */
+async function buildRss(component, id) {
+    const card = document.createElement('div');
+    card.className = 'component-card';
+    card.dataset.componentId = id;
+
+    const url = component.proxy ? `${component.proxy}${encodeURIComponent(component.url)}` : component.url;
+
+    await fetch(url)
+        .then(response => response.text())
+        .then(text => {
+            parseRssFeed(text).slice(0, component.maxItems).forEach(title => {
+                const item = document.createElement('div');
+                item.className = 'rss-item';
+                item.textContent = title;
+                card.appendChild(item);
+            });
+        })
+        .catch(() => {
+            const err = document.createElement('p');
+            err.textContent = 'Failed to load feed';
+            card.appendChild(err);
+        });
+
+    return card;
+}
 /**
  * Fetches weather data from the provided URL
  * @param {string} url - The URL to fetch weather data from
  * @returns {Promise<Object>} The weather data object
  */
-async function fetchWeatherData(url) {
+async function fetchWeatherData(latitude, longitude, units = 'fahrenheit') {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weathercode,relative_humidity_2m,wind_speed_10m,apparent_temperature&temperature_unit=${units}&wind_speed_unit=mph`;
     const response = await fetch(url);
     if (!response.ok) {
         throw new Error(`Weather fetch failed: ${response.status}`);
@@ -220,7 +268,7 @@ async function fetchWeatherData(url) {
  * @param {string} id - The unique identifier to set as data-component-id
  * @returns {HTMLElement} The constructed weather card element
  */
-function buildWeather(data, id) {
+function buildWeather(data, id, city = 'Unknown', weatherBackground = false) {
     const card = document.createElement('div');
     card.className = 'component-card';
     card.dataset.componentId = id;
@@ -233,13 +281,31 @@ function buildWeather(data, id) {
         45: "Foggy",
         61: "Light rain",
         63: "Moderate rain",
+        71: "Light snow",
+        73: "Moderate snow",
+        75: "Heavy snow",
         80: "Rain showers",
         95: "Thunderstorm"
     };
 
-    const city = document.createElement('div');
-    city.className = 'weather-city';
-    city.textContent = "Denver";
+    const weatherBackgrounds = {
+        0: "./assets/weather/clear.jpg",
+        1: "./assets/weather/partly-cloudy.jpg",
+        2: "./assets/weather/partly-cloudy.jpg",
+        3: "./assets/weather/overcast.jpg",
+        45: "./assets/weather/foggy.jpg",
+        61: "./assets/weather/light-rain.jpg",
+        63: "./assets/weather/moderate-rain.jpg",
+        71: "./assets/weather/light-snow.jpg",
+        73: "./assets/weather/moderate-snow.jpg",
+        75: "./assets/weather/heavy-snow.jpg",
+        80: "./assets/weather/heavy-rain.jpg",
+        95: "./assets/weather/thunderstorm.jpg"
+    };
+
+    const cityEl = document.createElement('div');
+    cityEl.className = 'weather-city';
+    cityEl.textContent = city;
 
     const temp = document.createElement('div');
     temp.className = 'weather-temp';
@@ -261,16 +327,23 @@ function buildWeather(data, id) {
     feelsLike.className = 'weather-feels-like';
     feelsLike.innerHTML = `<span>Feels like</span><span>${data.current.apparent_temperature}°F</span>`;
     
-    card.appendChild(city);
+    const bgPath = weatherBackgrounds[data.current.weathercode];
+    if (bgPath && weatherBackground) {
+        const root = document.getElementById('display-root');
+        if (root) {
+            root.style.setProperty('--bg-image', `url("${bgPath}")`);
+        }
+    }
+
+    card.appendChild(cityEl);
     card.appendChild(temp);
     card.appendChild(condition);
     card.appendChild(humidity);
     card.appendChild(wind);
     card.appendChild(feelsLike);
-
-
     return card;
 }
+
 /**
  * Builds a clock component element based on the provided component configuration
  * If the mode is "analog", returns a svg element of an analog clock.
@@ -399,6 +472,68 @@ function drawAnalogClock() {
 // ============================================================
 /* istanbul ignore next */
 
+/**
+ * Renders a single component into the target zone.
+ * If the component config includes a backgroundImage field, applies it to the
+ * card element with background-size: cover so it fills the card surface.
+ * @param {Object} component The component configuration object to render
+ * @param {HTMLElement} zoneElem the target zone DOM element
+ * @param {string} id The unique component identifier
+ */
+async function renderComponent(component, zoneElem, id) {
+    const builder = getComponent(component.type);
+    const element = await builder(component, id);
+    if (component.backgroundImage) {
+        element.style.backgroundImage = `url(${component.backgroundImage})`;
+        element.style.backgroundSize = 'cover';
+        element.style.backgroundPosition = 'center';
+    }
+    const existing = zoneElem.querySelector(`[data-component-id="${id}"]`);
+    if (existing) {
+        existing.replaceWith(element);
+    } else {
+        zoneElem.appendChild(element);
+    }
+}
+
+/**
+ * Schedules a component to be rendered and an optional periodic refresh
+ * 
+ * - Renders the component immediately on call
+ * - If the 'component.refresh' is a positive number, it sets up a repeating interval that re-renders the component at that cadence
+ * - Returns a cleanup handle so callers can cancel the interval later 
+ * 
+ * @param {Object} component The component config object
+ * @param {HTMLElement} zoneElem the target zone DOM element
+ * @returns {Object} An object with intervalId and cancel properties
+ * @returns {(number|null)} intervalId - The value returned by setInterval, or null if no interval was created
+ * @returns {Function} cancel - A zero-argument function that stops the interval
+ */
+function scheduleComponent(component, zoneElem, id) {
+    if (typeof component.refresh !== 'number' || component.refresh <= 0) {
+        return { intervalId: null, cancel() {} };
+    }
+    const intervalId = setInterval(async () => {
+        await renderComponent(component, zoneElem, id);
+    }, component.refresh);
+    return {
+        intervalId,
+        cancel() {
+            clearInterval(intervalId);
+        }
+    };
+}
+
+/**
+ * Cancels all active scheduler handles returned by bootstrap
+ * Safe to call multiple times; already-cancelled handles are no-ops
+ * @param {Array<{ cancel: Function }>} handles
+ */
+function cancelAll(handles) {
+    for (const handle of handles) {
+        handle.cancel();
+    }
+}
 
 
 // ============================================================
@@ -415,19 +550,24 @@ function drawAnalogClock() {
 /* istanbul ignore next */
 async function bootstrap() {
     try {
-        const validZones = Array.from(document.querySelectorAll('.zone')).map(el => el.id);
-        const config = await loadConfig(validZones);
+        const zoneElems = new Map(Array.from(document.querySelectorAll('.zone')).map(el => [el.id, el]));
+        const config = await loadConfig(Array.from(zoneElems.keys()));
         document.documentElement.style.setProperty('--color-bg', config.theme?.background ?? '#111111');
         document.documentElement.style.setProperty('--color-text', config.theme?.color ?? '#ffffff');
         document.documentElement.style.setProperty('--color-secondary', config.theme?.secondaryColor ?? '#888888');
         document.documentElement.style.setProperty('--font-family', config.theme?.fontFamily ?? 'sans-serif');
+        if (config.theme?.backgroundImage) {
+            document.documentElement.style.setProperty('--bg-image', `url(${config.theme.backgroundImage})`);
+        }
         registerComponents();
+
         for (const [i, component] of config.components.entries()) {
-            const builder = getComponent(component.type);
-            const element = await builder(component, `component-${i}`);
-            document.getElementById(component.zone).appendChild(element);
+            const id = `component-${i}`;
+            const zoneElem = zoneElems.get(component.zone);
+            const enriched = { ...component, proxy: config.proxy, weatherBackground: config.theme?.weatherBackground ?? false };
+            await renderComponent(enriched, zoneElem, id);
             if (component.refresh) {
-                // Call the scheduler to set up refresh intervals for this component
+                scheduleComponent(enriched, zoneElem, id);
             }
         }
     }
@@ -442,16 +582,22 @@ async function bootstrap() {
 
 document.addEventListener('DOMContentLoaded', bootstrap);
 
-export { loadConfig, 
-    validateConfig, 
-    validateLayout, 
-    validateComponents, 
-    validateComponent, 
-    registerComponent, 
-    getComponent, 
+export {
+    loadConfig,
+    validateConfig,
+    validateLayout,
+    validateComponents,
+    validateComponent,
+    registerComponent,
+    getComponent,
     buildImage,
     bootstrap,
     buildClock,
+    scheduleComponent,
+    cancelAll,
+    renderComponent,
     buildWeather,
     fetchWeatherData,
+    buildRss,
+    parseRssFeed,
 };

@@ -4,8 +4,11 @@ node_modules/
 # Coverage reports
 coverage/
 
-# Assets
-assets/
-
 # AI
-.claude/
+.claude/.DS_Store
+
+# Mac system files
+**/.DS_Store
+
+# Add config.json to .gitignore
+src/config.json

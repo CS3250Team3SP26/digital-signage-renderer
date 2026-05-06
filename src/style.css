@@ -33,6 +33,9 @@ html, body {
   gap: 0.5em;
   padding: 0.5em;
   background-color: var(--color-bg, #111111);
+  background-image: var(--bg-image, none);
+  background-size: cover;
+  background-position: center;
 }
 
 /* ============================================================
@@ -143,6 +146,27 @@ html, body {
     .weather-feels-like span:last-child {
       width: 5em;
       text-align: right;
+    }
+
+  /* ============================================================
+    RSS COMPONENT
+    ============================================================ */
+    .component-card:has(.rss-item) {
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .rss-item {
+      font-size: 0.95em;
+      padding: 0.4em 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      white-space: normal;
+      word-break: break-word;
+      line-height: 1.4;
+    }
+
+    .rss-item:last-child {
+      border-bottom: none;
     }
 
   /* ============================================================
