@@ -224,6 +224,10 @@ function parseRssFeed(xmlString) {
  * @returns {HTMLElement} The constructed card div (fetch populates it asynchronously)
  */
 /* istanbul ignore next */
+
+let _lastRssTitles = null;
+
+/* istanbul ignore next */
 async function buildRss(component, id) {
     const card = document.createElement('div');
     card.className = 'component-card';
@@ -234,7 +238,15 @@ async function buildRss(component, id) {
     await fetch(url)
         .then(response => response.text())
         .then(text => {
-            parseRssFeed(text).slice(0, component.maxItems).forEach(title => {
+            const titles = parseRssFeed(text).slice(0, component.maxItems);
+            const titlesKey = titles.join('|');
+
+            if (_lastRssTitles !== null ) {
+                scatter(200, 0.9);
+            }
+            _lastRssTitles = titlesKey;
+
+            titles.forEach(title => {
                 const item = document.createElement('div');
                 item.className = 'rss-item';
                 item.textContent = title;
@@ -454,7 +466,11 @@ function initParticleEngine() {
     _particleCtx = _particleCanvas.getContext('2d');
     _resizeParticleCanvas();
     window.addEventListener('resize', _resizeParticleCanvas);
-    setInterval(() => scatter(5), 200);
+
+    for (let i = 0; i < 40; i++) {
+        _particles.push(_createParticle(0.15, true));
+    }
+    _animationFrameId = requestAnimationFrame(_animateParticles);
 }
 /* istanbul ignore next */
 function _resizeParticleCanvas() {
@@ -463,7 +479,7 @@ function _resizeParticleCanvas() {
     _particleCanvas.height = window.innerHeight;
 }
 /* istanbul ignore next */
-function _createParticle(maxOpacity = 0.15) {
+function _createParticle(maxOpacity = 0.15, recycle = false) {
     return {
         x: Math.random() * window.innerWidth,
         y: Math.random() * window.innerHeight,
@@ -471,6 +487,8 @@ function _createParticle(maxOpacity = 0.15) {
         vy: (Math.random() - 0.5) * 4,
         opacity: maxOpacity * (0.8 + Math.random() * 0.2),
         size: Math.random() * 2.5 + 1,
+        recycle,
+        maxOpacity,
     };
 }
 /* istanbul ignore next */
@@ -491,16 +509,35 @@ function _animateParticles() {
         return;
     }
     _particleCtx.clearRect(0, 0, _particleCanvas.width, _particleCanvas.height);
-    _particles = _particles.filter(p => p.opacity > 0.01);
+
+    _particles = _particles.filter(p => {
+        if (p.opacity <= 0.01) {
+            if (p.recycle) {
+                p.x = Math.random() * window.innerWidth;
+                p.y = Math.random() * window.innerHeight;
+                p.vx = (Math.random() - 0.5) * 4;
+                p.vy = (Math.random() - 0.5) * 4;
+                p.opacity = p.maxOpacity * (0.8 + Math.random() * 0.2);
+                return true;
+            }
+            return false;
+        }
+        return true;
+    });
+
     for (const p of _particles) {
         p.x += p.vx;
-        p.y += p.vy;
-        p.opacity -= 0.012;
+    p.y += p.vy;
+
+    if (p.x <= 0 || p.x >= window.innerWidth) p.vx *= -1;
+    if (p.y <= 0 || p.y >= window.innerHeight) p.vy *= -1;  
+        if (!p.recycle) p.opacity -= 0.012; 
         _particleCtx.beginPath();
         _particleCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         _particleCtx.fillStyle = `rgba(255, 255, 255, ${Math.max(0, p.opacity)})`;
         _particleCtx.fill();
     }
+
     _animationFrameId = requestAnimationFrame(_animateParticles);
 }
 
@@ -541,17 +578,13 @@ async function renderComponent(component, zoneElem, id) {
  * @returns {Object} An object with intervalId and cancel properties
  * @returns {(number|null)} intervalId - The value returned by setInterval, or null if no interval was created
  * @returns {Function} cancel - A zero-argument function that stops the interval
- */
+ * **/
 function scheduleComponent(component, zoneElem, id) {
     if (typeof component.refresh !== 'number' || component.refresh <= 0) {
         return { intervalId: null, cancel() {} };
     }
     const intervalId = setInterval(async () => {
         await renderComponent(component, zoneElem, id);
-        /* istanbul ignore next */
-        if (component.type === 'rss' || component.type === 'weather') {
-            scatter(80, 0.5);  // big bright burst on data update
-        }
     }, component.refresh);
     return {
         intervalId,
@@ -560,7 +593,6 @@ function scheduleComponent(component, zoneElem, id) {
         }
     };
 }
-
 /**
  * Cancels all active scheduler handles returned by bootstrap
  * Safe to call multiple times; already-cancelled handles are no-ops
@@ -596,7 +628,7 @@ async function bootstrap() {
         registerComponents();
         initParticleEngine();
         globalThis.scatter = scatter;
-        setTimeout(() => scatter(15, 0.4), 100)
+    
 
         for (const [i, component] of config.components.entries()) {
             const id = `component-${i}`;
