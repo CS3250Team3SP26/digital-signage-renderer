@@ -546,12 +546,12 @@ function initRippleEngine() {
     window.addEventListener('resize', resize);
 
     const particles = Array.from({ length: 110 }, () => ({
-        x:         Math.random() * canvas.width,
-        y:         Math.random() * canvas.height,
-        vx:        (Math.random() - 0.5) * 0.3,
-        vy:        (Math.random() - 0.5) * 0.3,
-        r:         0.7 + Math.random() * 1.1,
-        baseAlpha: 0.07 + Math.random() * 0.12,
+        x:         Math.random() * canvas.width,  // NOSONAR
+        y:         Math.random() * canvas.height, // NOSONAR
+        vx:        (Math.random() - 0.5) * 0.3,  // NOSONAR
+        vy:        (Math.random() - 0.5) * 0.3,  // NOSONAR
+        r:         0.7 + Math.random() * 1.1,    // NOSONAR
+        baseAlpha: 0.07 + Math.random() * 0.12,  // NOSONAR
     }));
 
     const ripples = [];
@@ -612,8 +612,8 @@ function initRippleEngine() {
         }
 
         for (const p of particles) {
-            p.vx += (Math.random() - 0.5) * 0.014;
-            p.vy += (Math.random() - 0.5) * 0.014;
+            p.vx += (Math.random() - 0.5) * 0.014; // NOSONAR
+            p.vy += (Math.random() - 0.5) * 0.014; // NOSONAR
             p.vx *= 0.986;
             p.vy *= 0.986;
             p.x  += p.vx;
