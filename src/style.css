@@ -33,6 +33,9 @@ html, body {
   gap: 0.5em;
   padding: 0.5em;
   background-color: var(--color-bg, #111111);
+  background-image: var(--bg-image, none);
+  background-size: cover;
+  background-position: center;
 }
 
 /* ============================================================

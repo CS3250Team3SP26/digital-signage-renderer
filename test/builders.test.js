@@ -78,7 +78,7 @@ describe('buildWeather', () => {
     });
 
     it('should display the city name', () => {
-        const result = buildWeather(fakeData, 'component-5');
+        const result = buildWeather(fakeData, 'component-5','Denver');
         expect(result.querySelector('.weather-city').textContent).toBe('Denver');
     });
 
