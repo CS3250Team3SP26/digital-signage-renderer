@@ -138,4 +138,9 @@ describe('parseRssFeed', () => {
         const result = parseRssFeed(xml);
         expect(result.length).toBe(0);
     });
+    it('returns empty string for items with no title', () => {
+        const xml = `<rss><channel><item></item></channel></rss>`;
+        const result = parseRssFeed(xml);
+        expect(result[0]).toBe('');
+    });
 });

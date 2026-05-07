@@ -227,14 +227,18 @@ function parseRssFeed(xmlString) {
 async function buildRss(component, id) {
     const card = document.createElement('div');
     card.className = 'component-card';
-    card.dataset.componentId = id;
+    card.dataset.componentId    = id;
+    card.dataset.rippleTarget    = '.rss-item';
+    card.dataset.rippleMagnitude = '3';
 
     const url = component.proxy ? `${component.proxy}${encodeURIComponent(component.url)}` : component.url;
 
     await fetch(url)
         .then(response => response.text())
         .then(text => {
-            parseRssFeed(text).slice(0, component.maxItems).forEach(title => {
+            const titles = parseRssFeed(text).slice(0, component.maxItems);
+
+            titles.forEach(title => {
                 const item = document.createElement('div');
                 item.className = 'rss-item';
                 item.textContent = title;
@@ -271,7 +275,9 @@ async function fetchWeatherData(latitude, longitude, units = 'fahrenheit') {
 function buildWeather(data, id, city = 'Unknown', weatherBackground = false) {
     const card = document.createElement('div');
     card.className = 'component-card';
-    card.dataset.componentId = id;
+    card.dataset.componentId  = id;
+    card.dataset.rippleTarget    = '.weather-temp';
+    card.dataset.rippleMagnitude = '5';
 
     const weatherDescriptions = {
         0: "Clear sky",
@@ -356,23 +362,30 @@ function buildClock(component, id) {
     const card = document.createElement('div');
     card.className = 'component-card clock-card';
     card.dataset.componentId = id;
+    card.dataset.rippleTarget    = '.clock-seconds';
+    card.dataset.rippleMagnitude = '1';
 
     if (component.mode === "analog") {
         const clock = drawAnalogClock();
         card.appendChild(clock);
     } else {
+        const now = new Date();
         const time = document.createElement('div');
         time.className = 'clock-time';
-        time.textContent = new Date().toLocaleTimeString('en-US', {
+        time.textContent = now.toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit',
             hour12: false
-        });
+        }) + ':';
+
+        const secondsSpan = document.createElement('span');
+        secondsSpan.className = 'clock-seconds';
+        secondsSpan.textContent = String(now.getSeconds()).padStart(2, '0');
+        time.appendChild(secondsSpan);
 
         const date = document.createElement('div');
         date.className = 'clock-date';
-        date.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        date.textContent = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
         card.appendChild(time);
         card.appendChild(date);
@@ -464,7 +477,6 @@ function drawAnalogClock() {
     return svg;
 }
 
-
 // ============================================================
 // SCHEDULER
 // Handles per-component refresh intervals
@@ -491,6 +503,12 @@ async function renderComponent(component, zoneElem, id) {
     const existing = zoneElem.querySelector(`[data-component-id="${id}"]`);
     if (existing) {
         existing.replaceWith(element);
+        requestAnimationFrame(() => {
+            const selector  = element.dataset.rippleTarget;
+            const magnitude = Number(element.dataset.rippleMagnitude) || 1;
+            const origin    = selector ? (element.querySelector(selector) ?? element) : element;
+            document.dispatchEvent(new CustomEvent('component-update', { detail: { element: origin, magnitude } }));
+        });
     } else {
         zoneElem.appendChild(element);
     }
@@ -508,7 +526,7 @@ async function renderComponent(component, zoneElem, id) {
  * @returns {Object} An object with intervalId and cancel properties
  * @returns {(number|null)} intervalId - The value returned by setInterval, or null if no interval was created
  * @returns {Function} cancel - A zero-argument function that stops the interval
- */
+ * **/
 function scheduleComponent(component, zoneElem, id) {
     if (typeof component.refresh !== 'number' || component.refresh <= 0) {
         return { intervalId: null, cancel() {} };
@@ -523,7 +541,6 @@ function scheduleComponent(component, zoneElem, id) {
         }
     };
 }
-
 /**
  * Cancels all active scheduler handles returned by bootstrap
  * Safe to call multiple times; already-cancelled handles are no-ops
@@ -535,6 +552,124 @@ function cancelAll(handles) {
     }
 }
 
+
+// ============================================================
+// RIPPLE ENGINE
+// Ambient particle field driven by component-update events
+// Canvas sits behind all zone content (z-index: 0)
+// Only initialised when config.theme.ambience === true
+// ============================================================
+
+/**
+ * Initialises the ambient ripple engine — creates a full-screen canvas, spawns 110 drifting
+ * particles, and listens for 'component-update' events to trigger pressure-wave ripples.
+ * Must only be called when config.theme.ambience is true.
+ */
+/* istanbul ignore next */
+function initRippleEngine() {
+    const canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2;';
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+
+    function resize() {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const particles = Array.from({ length: 110 }, () => ({
+        x:         Math.random() * canvas.width,  // NOSONAR
+        y:         Math.random() * canvas.height, // NOSONAR
+        vx:        (Math.random() - 0.5) * 0.3,  // NOSONAR
+        vy:        (Math.random() - 0.5) * 0.3,  // NOSONAR
+        r:         0.7 + Math.random() * 1.1,    // NOSONAR
+        baseAlpha: 0.07 + Math.random() * 0.12,  // NOSONAR
+    }));
+
+    const ripples = [];
+
+    function spawnRipple(el, magnitude) {
+        const rect  = el.getBoundingClientRect();
+        const x     = rect.left + rect.width  / 2;
+        const y     = rect.top  + rect.height / 2;
+        const rings = Math.min(Math.ceil(magnitude / 2), 3);
+        for (let i = 0; i < rings; i++) {
+            ripples.push({
+                x, y, r: 0,
+                maxR:      70 + magnitude * 65,
+                speed:     2 + magnitude * 0.5 + i * 0.45,
+                magnitude,
+                delay:     i * 130,
+                born:      performance.now(),
+            });
+        }
+    }
+
+    function kickParticles(rip, prevR) {
+        const influence = 12 + rip.magnitude * 5;
+        const decay     = 1 - rip.r / rip.maxR;
+        for (const p of particles) {
+            const dx   = p.x - rip.x;
+            const dy   = p.y - rip.y;
+            const dist = Math.hypot(dx, dy) || 0.001;
+            if (dist < prevR || dist > rip.r + influence) continue;
+            const falloff = Math.max(0, 1 - Math.abs(dist - rip.r) / influence);
+            const energy  = falloff * decay * rip.magnitude * 0.2;
+            p.vx += (dx / dist) * energy;
+            p.vy += (dy / dist) * energy;
+        }
+    }
+
+    function tickParticle(p) {
+        p.vx += (Math.random() - 0.5) * 0.014; // NOSONAR
+        p.vy += (Math.random() - 0.5) * 0.014; // NOSONAR
+        p.vx *= 0.986;
+        p.vy *= 0.986;
+        p.x  += p.vx;
+        p.y  += p.vy;
+        if (p.x < 0)             p.x += canvas.width;
+        if (p.x > canvas.width)  p.x -= canvas.width;
+        if (p.y < 0)             p.y += canvas.height;
+        if (p.y > canvas.height) p.y -= canvas.height;
+    }
+
+    function drawParticle(p) {
+        const excited = Math.min(Math.hypot(p.vx, p.vy) / 0.75, 1);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r + excited * 1.3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${p.baseAlpha + excited * 0.28})`;
+        ctx.fill();
+    }
+
+    document.addEventListener('component-update', (e) => {
+        spawnRipple(e.detail.element, e.detail.magnitude);
+    });
+
+    function frame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const now = performance.now();
+
+        for (let ri = ripples.length - 1; ri >= 0; ri--) {
+            const rip = ripples[ri];
+            if (now - rip.born < rip.delay) continue;
+            const prevR = rip.r;
+            rip.r += rip.speed;
+            if (rip.r >= rip.maxR) { ripples.splice(ri, 1); continue; }
+            kickParticles(rip, prevR);
+        }
+
+        for (const p of particles) {
+            tickParticle(p);
+            drawParticle(p);
+        }
+
+        requestAnimationFrame(frame);
+    }
+
+    requestAnimationFrame(frame);
+}
 
 // ============================================================
 // BOOTSTRAP
@@ -569,7 +704,10 @@ async function bootstrap() {
             if (component.refresh) {
                 scheduleComponent(enriched, zoneElem, id);
             }
+            
         }
+        document.getElementById('display-root').style.visibility = 'visible';
+        if (config.theme?.ambience === true) initRippleEngine();
     }
     catch (error) {
         console.error("Error during bootstrap:", error);
@@ -581,6 +719,7 @@ async function bootstrap() {
 }
 
 document.addEventListener('DOMContentLoaded', bootstrap);
+
 
 export {
     loadConfig,
@@ -600,4 +739,5 @@ export {
     fetchWeatherData,
     buildRss,
     parseRssFeed,
+    initRippleEngine,
 };

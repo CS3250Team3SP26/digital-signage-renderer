@@ -53,6 +53,8 @@ html, body {
    Visual card treatment lives on .component-card, not the zone
    ============================================================ */
 .zone {
+  position: relative;
+  z-index: 1;
   color: var(--color-text, #ffffff);
   font-family: var(--font-family, sans-serif);
   overflow: hidden;
