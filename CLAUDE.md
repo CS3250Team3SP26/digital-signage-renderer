@@ -35,8 +35,9 @@ digital-signage-renderer/
 | **Config Loader** | `fetch`es and validates `config.json`; rejects on missing required fields |
 | **Component Registry** | A `Map` of `type → builderFunction`; adding a new component = registering one function |
 | **Component Builders** | One pure function per type (buildClock, buildRSS, buildImage, buildText, buildWeather). Signature: build[Type](component, id) — takes the component config object and a unique string ID. Returns a div.component-card with data-component-id set to id as the root element. The card div wraps all inner content elements and is responsible for card styling. This consistent root structure allows the Scheduler to locate and replace any component type via [data-component-id] without knowing the component's internal structure. These are the unit-testable surface. |
-| **Scheduler** | Handles per-component refresh intervals using `setInterval`; respects the `refresh` field in config |
-| **Bootstrap** | Entry point — wires everything together on `DOMContentLoaded`. Iterates config components, calls registry, injects into zones, starts scheduler. |
+| **Scheduler** | Handles per-component refresh intervals using `setInterval`; respects the `refresh` field in config. After each DOM replacement it dispatches a `component-update` CustomEvent so the Ripple Engine can react. |
+| **Ripple Engine** | Ambient canvas particle system. 110 particles drift in a full-screen canvas behind (or in front of) zone content. Invisible pressure waves triggered by `component-update` events kick nearby particles. Initialised only when `config.theme.ambience === true`; excluded from test coverage via Istanbul ignore. |
+| **Bootstrap** | Entry point — wires everything together on `DOMContentLoaded`. Iterates config components, calls registry, injects into zones, starts scheduler. Calls `initRippleEngine()` at the end if `config.theme.ambience === true`. |
 
 ---
 
@@ -50,7 +51,8 @@ digital-signage-renderer/
   "theme": {
     "background": "#111111",
     "color": "#ffffff",
-    "fontFamily": "sans-serif"
+    "fontFamily": "sans-serif",
+    "ambience": true
   },
   "components": [
     {
@@ -81,6 +83,14 @@ digital-signage-renderer/
 
 **Required component fields:** `zone`, `type`
 **Optional:** `refresh` (ms interval), all other fields are type-specific.
+
+**Theme fields:**
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `background` | string | `#111111` | Root background colour (CSS value) |
+| `color` | string | `#ffffff` | Primary text colour |
+| `fontFamily` | string | `sans-serif` | Base font family |
+| `ambience` | boolean | `false` | Enable the ambient ripple particle engine. When `true`, a full-screen canvas is created and 110 particles drift behind zone content, reacting to component refresh events with pressure-wave ripples. |
 
 ---
 

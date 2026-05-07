@@ -224,14 +224,12 @@ function parseRssFeed(xmlString) {
  * @returns {HTMLElement} The constructed card div (fetch populates it asynchronously)
  */
 /* istanbul ignore next */
-
-let _lastRssTitles = null;
-
-/* istanbul ignore next */
 async function buildRss(component, id) {
     const card = document.createElement('div');
     card.className = 'component-card';
-    card.dataset.componentId = id;
+    card.dataset.componentId    = id;
+    card.dataset.rippleTarget    = '.rss-item';
+    card.dataset.rippleMagnitude = '3';
 
     const url = component.proxy ? `${component.proxy}${encodeURIComponent(component.url)}` : component.url;
 
@@ -239,12 +237,6 @@ async function buildRss(component, id) {
         .then(response => response.text())
         .then(text => {
             const titles = parseRssFeed(text).slice(0, component.maxItems);
-            const titlesKey = titles.join('|');
-
-            if (_lastRssTitles !== null ) {
-                scatter(200, 0.9);
-            }
-            _lastRssTitles = titlesKey;
 
             titles.forEach(title => {
                 const item = document.createElement('div');
@@ -282,7 +274,9 @@ async function fetchWeatherData(url) {
 function buildWeather(data, id) {
     const card = document.createElement('div');
     card.className = 'component-card';
-    card.dataset.componentId = id;
+    card.dataset.componentId  = id;
+    card.dataset.rippleTarget    = '.weather-temp';
+    card.dataset.rippleMagnitude = '5';
 
     const weatherDescriptions = {
         0: "Clear sky",
@@ -341,23 +335,30 @@ function buildClock(component, id) {
     const card = document.createElement('div');
     card.className = 'component-card clock-card';
     card.dataset.componentId = id;
+    card.dataset.rippleTarget    = '.clock-seconds';
+    card.dataset.rippleMagnitude = '1';
 
     if (component.mode === "analog") {
         const clock = drawAnalogClock();
         card.appendChild(clock);
     } else {
+        const now = new Date();
         const time = document.createElement('div');
         time.className = 'clock-time';
-        time.textContent = new Date().toLocaleTimeString('en-US', {
+        time.textContent = now.toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit',
             hour12: false
-        });
+        }) + ':';
+
+        const secondsSpan = document.createElement('span');
+        secondsSpan.className = 'clock-seconds';
+        secondsSpan.textContent = String(now.getSeconds()).padStart(2, '0');
+        time.appendChild(secondsSpan);
 
         const date = document.createElement('div');
         date.className = 'clock-date';
-        date.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        date.textContent = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
         card.appendChild(time);
         card.appendChild(date);
@@ -448,101 +449,6 @@ function drawAnalogClock() {
 
     return svg;
 }
-// ============================================================
-// PARTICLE ENGINE
-// ============================================================
-/* istanbul ignore next */
-
-
-
-let _particleCanvas = null;
-let _particleCtx = null;
-let _particles = [];
-let _animationFrameId = null;
-/* istanbul ignore next */
-function initParticleEngine() {
-    _particleCanvas = document.getElementById('particle-canvas');
-    if (!_particleCanvas) return;
-    _particleCtx = _particleCanvas.getContext('2d');
-    _resizeParticleCanvas();
-    window.addEventListener('resize', _resizeParticleCanvas);
-
-    for (let i = 0; i < 40; i++) {
-        _particles.push(_createParticle(0.15, true));
-    }
-    _animationFrameId = requestAnimationFrame(_animateParticles);
-}
-/* istanbul ignore next */
-function _resizeParticleCanvas() {
-    if (!_particleCanvas) return;
-    _particleCanvas.width = window.innerWidth;
-    _particleCanvas.height = window.innerHeight;
-}
-/* istanbul ignore next */
-function _createParticle(maxOpacity = 0.15, recycle = false) {
-    return {
-        x: Math.random() * window.innerWidth,
-        y: Math.random() * window.innerHeight,
-        vx: (Math.random() - 0.5) * 4,
-        vy: (Math.random() - 0.5) * 4,
-        opacity: maxOpacity * (0.8 + Math.random() * 0.2),
-        size: Math.random() * 2.5 + 1,
-        recycle,
-        maxOpacity,
-    };
-}
-/* istanbul ignore next */
-function scatter(count = 45, maxOpacity = 0.15) {
-    if (!_particleCtx) return;
-    for (let i = 0; i < count; i++) {
-        _particles.push(_createParticle(maxOpacity));
-    }
-    if (!_animationFrameId) {
-        _animationFrameId = requestAnimationFrame(_animateParticles);
-    }
-}
-/* istanbul ignore next */
-function _animateParticles() {
-    if (!_particleCtx || _particles.length === 0) {
-        _particleCtx?.clearRect(0, 0, _particleCanvas.width, _particleCanvas.height);
-        _animationFrameId = null;
-        return;
-    }
-    _particleCtx.clearRect(0, 0, _particleCanvas.width, _particleCanvas.height);
-
-    _particles = _particles.filter(p => {
-        if (p.opacity <= 0.01) {
-            if (p.recycle) {
-                p.x = Math.random() * window.innerWidth;
-                p.y = Math.random() * window.innerHeight;
-                p.vx = (Math.random() - 0.5) * 4;
-                p.vy = (Math.random() - 0.5) * 4;
-                p.opacity = p.maxOpacity * (0.8 + Math.random() * 0.2);
-                return true;
-            }
-            return false;
-        }
-        return true;
-    });
-
-    for (const p of _particles) {
-        p.x += p.vx;
-    p.y += p.vy;
-
-    if (p.x <= 0 || p.x >= window.innerWidth) p.vx *= -1;
-    if (p.y <= 0 || p.y >= window.innerHeight) p.vy *= -1;  
-    if (!p.recycle) {
-        p.opacity -= 0.012;
-    }
-        _particleCtx.beginPath();
-        _particleCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        _particleCtx.fillStyle = `rgba(255, 255, 255, ${Math.max(0, p.opacity)})`;
-        _particleCtx.fill();
-    }
-
-    _animationFrameId = requestAnimationFrame(_animateParticles);
-}
-
 
 // ============================================================
 // SCHEDULER
@@ -563,6 +469,12 @@ async function renderComponent(component, zoneElem, id) {
     const existing = zoneElem.querySelector(`[data-component-id="${id}"]`);
     if (existing) {
         existing.replaceWith(element);
+        requestAnimationFrame(() => {
+            const selector  = element.dataset.rippleTarget;
+            const magnitude = Number(element.dataset.rippleMagnitude) || 1;
+            const origin    = selector ? (element.querySelector(selector) ?? element) : element;
+            document.dispatchEvent(new CustomEvent('component-update', { detail: { element: origin, magnitude } }));
+        });
     } else {
         zoneElem.appendChild(element);
     }
@@ -608,6 +520,126 @@ function cancelAll(handles) {
 
 
 // ============================================================
+// RIPPLE ENGINE
+// Ambient particle field driven by component-update events
+// Canvas sits behind all zone content (z-index: 0)
+// Only initialised when config.theme.ambience === true
+// ============================================================
+
+/**
+ * Initialises the ambient ripple engine — creates a full-screen canvas, spawns 110 drifting
+ * particles, and listens for 'component-update' events to trigger pressure-wave ripples.
+ * Must only be called when config.theme.ambience is true.
+ */
+/* istanbul ignore next */
+function initRippleEngine() {
+    const canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2;';
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+
+    function resize() {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const particles = Array.from({ length: 110 }, () => ({
+        x:         Math.random() * canvas.width,
+        y:         Math.random() * canvas.height,
+        vx:        (Math.random() - 0.5) * 0.3,
+        vy:        (Math.random() - 0.5) * 0.3,
+        r:         0.7 + Math.random() * 1.1,
+        baseAlpha: 0.07 + Math.random() * 0.12,
+    }));
+
+    const ripples = [];
+
+    function spawnRipple(el, magnitude) {
+        const rect = el.getBoundingClientRect();
+        const x = rect.left + rect.width  / 2;
+        const y = rect.top  + rect.height / 2;
+        const rings = magnitude <= 1 ? 1 : magnitude <= 3 ? 2 : 3;
+        for (let i = 0; i < rings; i++) {
+            ripples.push({
+                x, y, r: 0,
+                maxR:      70 + magnitude * 65,
+                speed:     2.0 + magnitude * 0.5 + i * 0.45,
+                magnitude,
+                delay:     i * 130,
+                born:      performance.now(),
+            });
+        }
+    }
+
+    document.addEventListener('component-update', (e) => {
+        spawnRipple(e.detail.element, e.detail.magnitude);
+    });
+
+    function frame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const now = performance.now();
+
+        for (let ri = ripples.length - 1; ri >= 0; ri--) {
+            const rip = ripples[ri];
+            if (now - rip.born < rip.delay) continue;
+
+            const prevR = rip.r;
+            rip.r += rip.speed;
+
+            if (rip.r >= rip.maxR) {
+                ripples.splice(ri, 1);
+                continue;
+            }
+
+            const influence = 12 + rip.magnitude * 5;
+            const decay     = 1 - rip.r / rip.maxR;
+
+            for (const p of particles) {
+                const dx   = p.x - rip.x;
+                const dy   = p.y - rip.y;
+                const dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
+
+                if (dist >= prevR && dist <= rip.r + influence) {
+                    const falloff = Math.max(0, 1 - Math.abs(dist - rip.r) / influence);
+                    const energy  = falloff * decay * rip.magnitude * 0.20;
+                    p.vx += (dx / dist) * energy;
+                    p.vy += (dy / dist) * energy;
+                }
+            }
+        }
+
+        for (const p of particles) {
+            p.vx += (Math.random() - 0.5) * 0.014;
+            p.vy += (Math.random() - 0.5) * 0.014;
+            p.vx *= 0.986;
+            p.vy *= 0.986;
+            p.x  += p.vx;
+            p.y  += p.vy;
+
+            if (p.x < 0)            p.x += canvas.width;
+            if (p.x > canvas.width) p.x -= canvas.width;
+            if (p.y < 0)            p.y += canvas.height;
+            if (p.y > canvas.height) p.y -= canvas.height;
+
+            const speed   = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+            const excited = Math.min(speed / 0.75, 1);
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r + excited * 1.3, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255,255,255,${p.baseAlpha + excited * 0.28})`;
+            ctx.fill();
+        }
+
+        requestAnimationFrame(frame);
+    }
+
+    requestAnimationFrame(frame);
+}
+
+// ============================================================
 // BOOTSTRAP
 // Entry point - wires everything together
 // Runs on DOMContentLoaded
@@ -628,9 +660,6 @@ async function bootstrap() {
         document.documentElement.style.setProperty('--color-secondary', config.theme?.secondaryColor ?? '#888888');
         document.documentElement.style.setProperty('--font-family', config.theme?.fontFamily ?? 'sans-serif');
         registerComponents();
-        initParticleEngine();
-        globalThis.scatter = scatter;
-    
 
         for (const [i, component] of config.components.entries()) {
             const id = `component-${i}`;
@@ -643,6 +672,7 @@ async function bootstrap() {
             
         }
         document.getElementById('display-root').style.visibility = 'visible';
+        if (config.theme?.ambience === true) initRippleEngine();
     }
     catch (error) {
         console.error("Error during bootstrap:", error);
@@ -674,7 +704,5 @@ export {
     fetchWeatherData,
     buildRss,
     parseRssFeed,
-    initParticleEngine,
-    scatter,
-    _createParticle,
+    initRippleEngine,
 };

@@ -6,26 +6,28 @@
   "theme": {
     "background": "#111111",
     "color": "#ffffff",
-    "fontFamily": "sans-serif"
+    "fontFamily": "sans-serif",
+    "ambience": true
   },
   "components": [
     {
       "zone": "sidebar",
       "type": "image",
-      "src": "./assets/logo.png",
-      "alt": "Your image description here"
+      "src": "https://cdn.discordapp.com/attachments/1470945943648997602/1501694849819087038/denver.jpg?ex=69fd01d0&is=69fbb050&hm=81a0c20892208244f98c2b1c36f26735414b3c5ac383dcefc50dd00c611f48b1&",
+      "alt": "Current weather background"
     },
     {
       "zone": "main",
       "type": "clock",
-      "mode": "digital"
+      "mode": "digital",
+      "refresh": 1000
     },
     {
       "zone": "main",
       "type": "rss",
       "url": "https://feeds.bbci.co.uk/news/rss.xml",
       "maxItems": 5,
-      "refresh": 60000
-    }
+      "refresh": 5000
+    }  
   ]
 }
