@@ -557,20 +557,56 @@ function initRippleEngine() {
     const ripples = [];
 
     function spawnRipple(el, magnitude) {
-        const rect = el.getBoundingClientRect();
-        const x = rect.left + rect.width  / 2;
-        const y = rect.top  + rect.height / 2;
-        const rings = magnitude <= 1 ? 1 : magnitude <= 3 ? 2 : 3;
+        const rect  = el.getBoundingClientRect();
+        const x     = rect.left + rect.width  / 2;
+        const y     = rect.top  + rect.height / 2;
+        const rings = Math.min(Math.ceil(magnitude / 2), 3);
         for (let i = 0; i < rings; i++) {
             ripples.push({
                 x, y, r: 0,
                 maxR:      70 + magnitude * 65,
-                speed:     2.0 + magnitude * 0.5 + i * 0.45,
+                speed:     2 + magnitude * 0.5 + i * 0.45,
                 magnitude,
                 delay:     i * 130,
                 born:      performance.now(),
             });
         }
+    }
+
+    function kickParticles(rip, prevR) {
+        const influence = 12 + rip.magnitude * 5;
+        const decay     = 1 - rip.r / rip.maxR;
+        for (const p of particles) {
+            const dx   = p.x - rip.x;
+            const dy   = p.y - rip.y;
+            const dist = Math.hypot(dx, dy) || 0.001;
+            if (dist < prevR || dist > rip.r + influence) continue;
+            const falloff = Math.max(0, 1 - Math.abs(dist - rip.r) / influence);
+            const energy  = falloff * decay * rip.magnitude * 0.2;
+            p.vx += (dx / dist) * energy;
+            p.vy += (dy / dist) * energy;
+        }
+    }
+
+    function tickParticle(p) {
+        p.vx += (Math.random() - 0.5) * 0.014; // NOSONAR
+        p.vy += (Math.random() - 0.5) * 0.014; // NOSONAR
+        p.vx *= 0.986;
+        p.vy *= 0.986;
+        p.x  += p.vx;
+        p.y  += p.vy;
+        if (p.x < 0)             p.x += canvas.width;
+        if (p.x > canvas.width)  p.x -= canvas.width;
+        if (p.y < 0)             p.y += canvas.height;
+        if (p.y > canvas.height) p.y -= canvas.height;
+    }
+
+    function drawParticle(p) {
+        const excited = Math.min(Math.hypot(p.vx, p.vy) / 0.75, 1);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r + excited * 1.3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${p.baseAlpha + excited * 0.28})`;
+        ctx.fill();
     }
 
     document.addEventListener('component-update', (e) => {
@@ -579,58 +615,20 @@ function initRippleEngine() {
 
     function frame() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
         const now = performance.now();
 
         for (let ri = ripples.length - 1; ri >= 0; ri--) {
             const rip = ripples[ri];
             if (now - rip.born < rip.delay) continue;
-
             const prevR = rip.r;
             rip.r += rip.speed;
-
-            if (rip.r >= rip.maxR) {
-                ripples.splice(ri, 1);
-                continue;
-            }
-
-            const influence = 12 + rip.magnitude * 5;
-            const decay     = 1 - rip.r / rip.maxR;
-
-            for (const p of particles) {
-                const dx   = p.x - rip.x;
-                const dy   = p.y - rip.y;
-                const dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
-
-                if (dist >= prevR && dist <= rip.r + influence) {
-                    const falloff = Math.max(0, 1 - Math.abs(dist - rip.r) / influence);
-                    const energy  = falloff * decay * rip.magnitude * 0.20;
-                    p.vx += (dx / dist) * energy;
-                    p.vy += (dy / dist) * energy;
-                }
-            }
+            if (rip.r >= rip.maxR) { ripples.splice(ri, 1); continue; }
+            kickParticles(rip, prevR);
         }
 
         for (const p of particles) {
-            p.vx += (Math.random() - 0.5) * 0.014; // NOSONAR
-            p.vy += (Math.random() - 0.5) * 0.014; // NOSONAR
-            p.vx *= 0.986;
-            p.vy *= 0.986;
-            p.x  += p.vx;
-            p.y  += p.vy;
-
-            if (p.x < 0)            p.x += canvas.width;
-            if (p.x > canvas.width) p.x -= canvas.width;
-            if (p.y < 0)            p.y += canvas.height;
-            if (p.y > canvas.height) p.y -= canvas.height;
-
-            const speed   = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-            const excited = Math.min(speed / 0.75, 1);
-
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r + excited * 1.3, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255,255,255,${p.baseAlpha + excited * 0.28})`;
-            ctx.fill();
+            tickParticle(p);
+            drawParticle(p);
         }
 
         requestAnimationFrame(frame);
